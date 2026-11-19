@@ -1538,6 +1538,69 @@ var _vHelp10=vHelp;vHelp=function(){return _vHelp10().replace(/<h3>7\. 저장<\/
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').then(function(reg){
   reg.addEventListener('updatefound',function(){var nw=reg.installing;if(!nw)return;nw.addEventListener('statechange',function(){if(nw.state==='installed'&&navigator.serviceWorker.controller)feed('새 버전이 준비됐어요. 앱을 다시 열면 적용돼요','b')})})}).catch(function(){})}
 
+/* ========== p11: 실수 되돌리기·하루 목표 시간·공부 잔디 ========== */
+APP_VER='1.1.0';
+function p11init(){if(!S.goal)S.goal={min:360,got:{}};if(!S.goal.got)S.goal.got={}}
+var _mig11=migrate;migrate=function(){_mig11();p11init()};p11init();
+/* ---------- 하루 목표 시간 ---------- */
+function goalCheck(){var t=T(),m=dayMin(t);if(m<S.goal.min||S.goal.got[t])return;S.goal.got[t]=1;var ks=Object.keys(S.goal.got).sort();while(ks.length>60)delete S.goal.got[ks.shift()];S.boxes.rand++;
+  celebrate('오늘 목표 달성!','', hm(m)+' 공부','하루 목표 '+hm(S.goal.min)+'을 채웠어요. 랜덤 상자 1개 획득',tile('chest_n',64))}
+var _gainAct11=gainAct;gainAct=function(stats,base,kind,label,meta){var r=_gainAct11(stats,base,kind,label,meta);if(meta&&meta.min)goalCheck();return r};
+function goalBar(){var m=dayMin(T());return bar('',m/S.goal.min*100,hm(m)+' / '+hm(S.goal.min))}
+A.setgoal=function(){var h=parseFloat(val('gh'));if(!(h>0&&h<=16)){feed('1~16시간 사이로 넣어 주세요','w');return}S.goal.min=Math.round(h*60);feed('하루 목표를 '+hm(S.goal.min)+'으로 바꿨어요','w');save();render()};
+/* ---------- 공부 잔디 ---------- */
+var hmSel=null,HMC=['#10162a','#1f4d3a','#2b7a52','#3fae6f','#6fe3a1'];
+function hmLv(m){if(!m)return 0;var p=m/S.goal.min;return p<.34?1:p<.67?2:p<1?3:4}
+function heatmap(weeks){
+  var cell=15,gap=3,L=20,T0=16,start=new Date(WK()+'T00:00:00');start.setDate(start.getDate()-7*(weeks-1));
+  var W=L+weeks*(cell+gap),H=T0+7*(cell+gap),g='<svg viewBox="0 0 '+W+' '+H+'" class="chart" style="padding:6px" role="img" aria-label="최근 '+weeks+'주 공부 시간 달력">',lastM=-1,today=T();
+  ['월','','수','','금','','일'].forEach(function(n,i){if(n)g+='<text x="'+(L-5)+'" y="'+(T0+i*(cell+gap)+11)+'" text-anchor="end" fill="#9aa6c8" font-size="9">'+n+'</text>'});
+  for(var w=0;w<weeks;w++)for(var d=0;d<7;d++){var dt=new Date(start);dt.setDate(dt.getDate()+w*7+d);var ds=fmt(dt);if(ds>today)continue;
+    if(d===0&&dt.getMonth()!==lastM){lastM=dt.getMonth();g+='<text x="'+(L+w*(cell+gap))+'" y="10" fill="#9aa6c8" font-size="9">'+(lastM+1)+'월</text>'}
+    var m=dayMin(ds),rest=S.rest&&S.rest.used.indexOf(ds)>=0;
+    g+='<rect data-a="hmday" data-v="'+ds+'" x="'+(L+w*(cell+gap))+'" y="'+(T0+d*(cell+gap))+'" width="'+cell+'" height="'+cell+'" fill="'+HMC[hmLv(m)]+'" stroke="'+(ds===hmSel?'#ffcf4d':ds===today?'#a3aecb':'#080b16')+'" stroke-width="'+(ds===hmSel||ds===today?2:1)+'" style="cursor:pointer"><title>'+md(ds)+' '+hm(m)+'</title></rect>';
+    if(rest&&!m)g+='<text x="'+(L+w*(cell+gap)+cell/2)+'" y="'+(T0+d*(cell+gap)+11)+'" text-anchor="middle" fill="#6fb8ff" font-size="9" pointer-events="none">휴</text>'}
+  return g+'</svg>';
+}
+function dayDetail(ds){var r=S.days[ds],m=dayMin(ds);if(!r||(!m&&!r.xp))return '<div class="sub" style="margin-top:8px">'+md(ds)+' 기록이 없어요'+(S.rest&&S.rest.used.indexOf(ds)>=0?' (휴식권 사용)':'')+'.</div>';
+  var rows=SUBJ.map(function(s){var mm=(r.min||{})[s[0]]||0,p=s[0]===s[2][0]?((r.prob||{})[s[0]]||0):0;if(!mm&&!p)return '';return '<tr><td>'+s[1]+'</td><td class="right num">'+(mm?hm(mm):'-')+'</td><td class="right num">'+(p||'-')+'</td></tr>'}).join('');
+  return '<div class="detail"><div class="row"><b class="grow">'+md(ds)+' ('+'일월화수목금토'.charAt(new Date(ds+'T00:00:00').getDay())+')</b><span class="gold num">'+hm(m)+'</span><span class="dim num">+'+(r.xp||0).toLocaleString()+' XP</span></div>'+(rows?'<table class="t" style="margin-top:6px"><tr><th>과목</th><th class="right">시간</th><th class="right">문제</th></tr>'+rows+'</table>':'')+'</div>'}
+function heatWin(){
+  var days=0,tot=0,best=0;for(var i=0;i<28;i++){var m=dayMin(dayOff(-i));if(m){days++;tot+=m;best=Math.max(best,m)}}
+  return win('공부 잔디','칸 하나가 하루예요. 하루 목표('+hm(S.goal.min)+')에 가까울수록 진한 초록이에요. 칸을 누르면 그날 기록이 나와요.',
+    heatmap(18)+'<div class="row" style="justify-content:flex-end;gap:4px;margin-top:6px"><span class="dim">적음</span>'+HMC.map(function(c){return '<span class="dot" style="background:'+c+';margin:0"></span>'}).join('')+'<span class="dim">목표 달성</span></div>'+
+    '<div class="grid2" style="margin-top:10px"><div class="inset"><div class="dim">최근 4주 공부한 날</div><b class="num">'+days+' / 28일</b></div><div class="inset"><div class="dim">공부한 날 평균</div><b class="num">'+(days?hm(tot/days):'-')+'</b></div></div>'+(hmSel?dayDetail(hmSel):''),'4주 최고 '+hm(best));
+}
+A.hmday=function(e){hmSel=hmSel===e.dataset.v?null:e.dataset.v;render()};
+/* ---------- 실수 되돌리기 ---------- */
+var UNDO=null,NOUNDO={openbox:1,reroll:1,tab:1,edit:1,tsub:1,slot:1,item:1,shopsel:1,sctab:1,ivorg:1,petsel:1,help:1,schedit:1,hmday:1,bk:1,bkpick:1,bkfile:1,bkshare:1,bkno:1,bkdo:1,rs:1,undo:1,undohide:1,equip:1,eqtitle:1,look:1,peteq:1,awayYes:1};
+var ANAME={buyc:'쿠폰 구매',usec:'쿠폰 사용',buyitem:'장비 구매',buyp:'물약 구매',buybox:'상자 구매',openbox:'상자 열기',q:'퀘스트 체크',delq:'퀘스트 삭제',badd:'보스 등록',bdel:'보스 삭제',bres:'보스 결과 입력',bdate:'보스 날짜 입력',skill:'필살기 사용',start:'타이머 시작',stop:'타이머 종료',sleep:'취침 기록',wake:'기상 기록',wake2:'기상 기록',rest:'휴식권 사용',score:'모의고사 점수 기록',sdel:'점수 삭제',summon:'필기 보스 소환',schsave:'공고 일정 수정',schdel:'공고 일정 삭제',reroll:'상점 다시 진열',wadd:'오답 기록',ivst:'면접 답변 상태 변경',ivdel:'면접 질문 삭제',job:'전직',pfocus:'집중의 물약 사용',pwis:'지혜의 물약 사용',delex:'운동 종류 삭제',delc:'쿠폰 삭제',setgoal:'하루 목표 변경'};
+function snapS(){var sv=S.savedAt;S.savedAt=0;var s=JSON.stringify(S);S.savedAt=sv;return s}
+function undoBar(){var b=document.getElementById('undobar');if(!b){b=document.createElement('div');b.id='undobar';document.body.appendChild(b)}
+  if(!UNDO){b.style.display='none';return}b.style.display='flex';b.innerHTML='<span class="grow">'+esc(noEmo(UNDO.label))+'</span><button class="btn sm" data-a="undo">되돌리기</button><button class="del" data-a="undohide" aria-label="닫기" style="color:var(--sub)">닫기</button>';
+  clearTimeout(undoBar.t);undoBar.t=setTimeout(function(){b.style.display='none'},8000)}
+window.addEventListener('click',function(ev){var e=ev.target.closest&&ev.target.closest('[data-a]');if(!e||!A[e.dataset.a]||e.dataset.a==='undo'||e.dataset.a==='undohide')return;
+  var name=e.dataset.a,before=snapS(),log0=S.log[0]&&S.log[0][0];
+  setTimeout(function(){if(snapS()===before)return;
+    if(NOUNDO[name]){if(UNDO){UNDO=null;undoBar()}return}
+    var lab=(S.log[0]&&S.log[0][0]!==log0)?S.log[0][1]:(ANAME[name]||'방금 한 작업');UNDO={s:before,label:lab,at:Date.now(),ref:S};undoBar()},0)},true);
+A.undo=function(){if(!UNDO)return;if(UNDO.ref!==S||ovOpen){if(UNDO.ref!==S){UNDO=null;undoBar();render()}feed(ovOpen?'창을 닫은 뒤에 되돌려 주세요':'기록이 통째로 바뀌어서 되돌릴 수 없어요','w');return}try{var x=JSON.parse(UNDO.s);x.savedAt=Date.now();S=x}catch(e){return}var lab=UNDO.label;UNDO=null;undoBar();closeOv();save();render();feed('되돌렸어요: '+lab,'w')};
+A.undohide=function(){var b=document.getElementById('undobar');if(b)b.style.display='none'};
+(function(){var st=document.createElement('style');st.textContent='#undobar{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:40;display:none;align-items:center;gap:8px;max-width:456px;margin:0 auto;padding:8px 8px 8px 12px;background:#0d1224;border-radius:3px;box-shadow:0 0 0 2px var(--edge),inset 0 0 0 2px var(--gold);font-size:13.5px}#undobar .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';document.head.appendChild(st)})();
+function undoWin(){var ago=UNDO?Math.max(0,Math.round((Date.now()-UNDO.at)/60000)):0;
+  return win('실수 되돌리기','문제 수를 잘못 넣었거나 버튼을 잘못 눌렀을 때 바로 전 상태로 돌아가요. 가장 최근 작업 하나만 되돌릴 수 있어요.',UNDO&&UNDO.ref===S?'<div class="line"><span class="grow"><span class="t">'+esc(noEmo(UNDO.label))+'</span><br><span class="s">'+(ago?ago+'분 전':'방금')+'</span></span><button class="btn sm" data-a="undo">되돌리기</button></div>':'<div class="sub">되돌릴 작업이 없어요. 앱을 다시 열면 기록이 사라져요.</div>')}
+/* ---------- 화면 연결 ---------- */
+var _vHome11=vHome;vHome=function(){var h=_vHome11(),m=dayMin(T());
+  var row='<div class="inset" style="display:block"><div class="row" style="margin-bottom:6px">'+tile('lamp',32)+'<div class="grow"><div class="k">오늘 목표 공부 시간</div><div class="v num">'+(m>=S.goal.min?'<span class="gold">달성!</span> ':'')+'남은 시간 '+hm(Math.max(0,S.goal.min-m))+'</div></div></div>'+goalBar()+'</div>';
+  h=h.replace('<div class="todo">','<div class="todo">'+row);
+  return h};
+var _vTimer11=vTimer;vTimer=function(){return _vTimer11().replace('<div class="clockbox">','<div class="clockbox"><div class="num" style="font-size:12.5px;color:#d6def0">오늘 '+hm(dayMin(T()))+' / 목표 '+hm(S.goal.min)+'</div>')};
+var _vLog11=vLog;vLog=function(){var h=_vLog11(),i=h.indexOf('</div>')+6;h=h.slice(0,i)+heatWin()+undoWin()+h.slice(i);
+  var j=h.indexOf('data-a="setwake"');if(j>=0){var e=h.indexOf('</div>',h.indexOf('</button>',j))+6;h=h.slice(0,e)+'<div class="form" style="margin-top:10px"><div class="field grow"><label class="f">하루 목표 공부 시간 (시간)</label><input name="gh" type="number" inputmode="decimal" step="0.5" min="1" max="16" value="'+(S.goal.min/60)+'"></div><button class="btn ghost sm" data-a="setgoal">저장</button></div>'+h.slice(e)}
+  return h};
+var _vHelp11=vHelp;vHelp=function(){var h=_vHelp11(),i=h.lastIndexOf('</section>');
+  return h.slice(0,i)+'<h3>17. 하루 목표 시간</h3><p>기본 6시간이에요. 캐릭터 화면과 타이머에 오늘 진행률이 나오고, 처음 채운 날마다 랜덤 상자를 받아요. 기록·설정 탭에서 바꿀 수 있어요.</p><h3>18. 공부 잔디</h3><p>기록·설정 탭에 최근 18주 공부 시간이 달력으로 나와요. 칸을 누르면 그날 과목별 시간과 문제 수를 볼 수 있어요.</p><h3>19. 실수 되돌리기</h3><p>기록하거나 구매하면 화면 아래에 「되돌리기」가 잠깐 떠요. 놓쳤으면 기록·설정 탭에서 가장 최근 작업 하나를 되돌릴 수 있어요.</p>'+h.slice(i)};
+
 /* ========== 시작 ========== */
 render();
 if(S.timer){var seen=0;try{seen=+localStorage.getItem('jrpg_seen')||0}catch(e){}if(seen)awayCheck(Date.now()-seen)}
