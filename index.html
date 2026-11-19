@@ -2011,7 +2011,7 @@ function dgRun(min,sd){
   var sx=(sd||Date.now())>>>0;function rr(){sx=(sx+0x6D2B79F5)>>>0;var t=Math.imul(sx^sx>>>15,1|sx);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}function ri(a,b){return a+Math.floor(rr()*(b-a+1))}
   var D=S.dg,start=D.floor;D.rem+=min;var gain=Math.floor(D.rem/10);D.rem-=gain*10;if(gain<=0&&min<15)return;
   var lines=[],gold=0,box=0,rbox=0,lbox=0,kills=0;
-  for(var i=0;i<Math.floor(min/15);i++){if(rr()<.4){kills++;var m=DGMON[ri(0,DGMON.length-1)],g=ri(5,15);gold+=g;var r=rr();if(r<.08){box++;lines.push(m+' 처치, 랜덤 상자 발견')}else lines.push(m+' 처치 (+'+g+'G)')}}
+  for(var i=0;i<Math.floor(min/15);i++){if(rr()<(cardIs('dg')?.8:.4)){kills++;var m=DGMON[ri(0,DGMON.length-1)],g=ri(5,15);gold+=g;var r=rr();if(r<.08){box++;lines.push(m+' 처치, 랜덤 상자 발견')}else lines.push(m+' 처치 (+'+g+'G)')}}
   for(var f=start+1;f<=start+gain;f++){
     if(f%25===0){lbox++;lines.push(f+'층 보물방 발견! 전설 상자')}
     else if(f%10===0){rbox++;gold+=30;kills++;lines.push(f+'층 미니 보스 「'+DGBOSS[(f/10-1)%DGBOSS.length]+'」 격파 (희귀 상자 +30G)')}
@@ -2149,6 +2149,224 @@ avatar=function(look,eq,opt){
 (function(){var t=new Image(),n=0;function go(){n++;t.onerror=function(){if(n<3)setTimeout(function(){TSHEET='tiles.png?v='+ASSETV+'&r='+Date.now();go()},800*n)};t.onload=function(){if(n>1)render()};t.src=TSHEET}go()})();
 /* 장면의 구름이 글자 상자 뒤로 비치지 않게 */
 (function(){var st=document.createElement('style');st.textContent='.scene .lv,.scene .job{background:rgba(10,14,28,.95)}';document.head.appendChild(st)})();
+
+/* ========== p15: 라이벌·시즌 패스·운명 카드·주간 레이드·장비 세트·스토리·필기 점수 예측 ========== */
+APP_VER='1.4.0';
+function p15init(){
+  if(!S.card)S.card={d:'',k:'',sub:'',opts:[],re:''};
+  if(!S.sp)S.sp={};if(!S.spGot)S.spGot={};
+  if(!S.rv)S.rv={last:WK(),hist:[],al:'',diff:1};
+  if(!S.raid)S.raid={last:WK(),kill:{},hist:[]};
+  if(!S.story)S.story={read:[],seen:[]};
+  if(!S.setT)S.setT={};
+}
+function frac(s){return (hashStr(s)%10000)/10000}
+
+/* ---------- 오늘의 운명 카드 ---------- */
+var CARDS=[['xp2','과목 집중','오늘 {s} XP 2배','r',2],['all30','전력 질주','오늘 모든 공부 XP +30%','n',3],['gold','황금의 날','오늘 얻는 골드 2배','n',3],['qbox','보물 사냥','오늘 퀘스트 상자 2배','n',3],['pet','동료의 날','오늘 동료 경험치 3배','n',2],['boss','필살의 날','오늘 보스에게 주는 데미지 2배','r',2],['dg','몬스터 출몰','오늘 던전 몬스터 2배','n',2],['sp','시즌 부스터','오늘 시즌 포인트 2배','r',2]];
+var CARDK={};CARDS.forEach(function(c){CARDK[c[0]]=c});
+var CSUB=['fm','fa','bm','ncs','cert'];
+function cardIs(k){return S.card&&S.card.d===T()&&S.card.k===k}
+function cardText(k,sub){var c=CARDK[k];return c[2].replace('{s}',sub?SK[sub].n:'')}
+function drawOpts(){var pool=[],t=T()+'#'+(S.card.re?'re':'');CARDS.forEach(function(c){for(var i=0;i<c[4];i++)pool.push(c[0])});var out=[],n=0;while(out.length<3&&n<50){var k=pool[hashStr(t+n)%pool.length];n++;if(out.indexOf(k)<0)out.push(k)}return out}
+function cardOv(){var opts=S.card.opts&&S.card.od===T()?S.card.opts:(S.card.opts=drawOpts(),S.card.od=T(),S.card.opts);
+  overlay('<div class="win modal" data-keep><h2>오늘의 운명 카드</h2><p class="desc">카드 한 장을 고르세요. 오늘 하루 동안 효과가 이어져요.</p><div class="row" style="gap:8px;justify-content:center">'+[0,1,2].map(function(i){return '<button class="chestb" style="width:92px;height:128px;justify-content:center;background:linear-gradient(160deg,#3b2a6b,#1d2540);box-shadow:0 0 0 2px var(--edge),inset 0 0 0 2px var(--gold)" data-a="cardpick" data-v="'+i+'">'+tile('scroll',40)+'<b style="font-size:13px;color:var(--gold2)">?</b></button>'}).join('')+'</div><button class="btn ghost sm wide" style="margin-top:12px" data-a="bkno">나중에</button></div>')}
+A.cardopen=function(){if(S.card.d===T()&&S.card.re!=='can')return;cardOv()};
+A.cardpick=function(e){var opts=S.card.opts,k=opts[+e.dataset.v];if(!k)return;var sub=k==='xp2'?CSUB[hashStr(T()+'s')%CSUB.length]:'';var wasRe=S.card.re==='can'&&S.card.d===T();S.card.d=T();S.card.k=k;S.card.sub=sub;S.card.re=wasRe?T():'';closeOv();sfx('box');
+  var c=CARDK[k];celebrate('「'+c[1]+'」',c[3]==='r'?'pur':'blue',cardText(k,sub),'다른 카드: '+opts.filter(function(x){return x!==k}).map(function(x){return CARDK[x][1]}).join(', ')+(S.card.re===''&&life()&&life().wakeOK?'<br>오늘은 일찍 일어나서 한 번 더 뽑을 수 있어요':''),tile('scroll',64));save();render()};
+A.cardre=function(){var lf=life();if(!lf||!lf.wakeOK||S.card.re)return;S.card.re='can';S.card.opts=null;S.card.od='';save();cardOv()};
+NOUNDO.cardopen=1;NOUNDO.cardre=1;NOUNDO.cardpick=1;
+function cardRow(){var t=T();if(S.card.d!==t)return '<div class="inset">'+tile('scroll',32)+'<div class="grow"><div class="k">오늘의 운명 카드</div><div class="v gold">아직 안 뽑았어요</div></div><button class="btn sm" data-a="cardopen">뽑기</button></div>';
+  var lf=life(),canRe=lf&&lf.wakeOK&&!S.card.re;return '<div class="inset">'+tile('scroll',32)+'<div class="grow"><div class="k">오늘의 카드 「'+CARDK[S.card.k][1]+'」</div><div class="v sub">'+cardText(S.card.k,S.card.sub)+'</div></div>'+(canRe?'<button class="btn sm ghost" data-a="cardre">다시 뽑기</button>':'')+'</div>'}
+/* 카드 효과 연결 */
+var _gqb15=giveQuestBox;giveQuestBox=function(q,key){var had=q.gb===key;_gqb15(q,key);if(!had&&cardIs('qbox')){S.boxes.rand++;feed('보물 사냥 카드: 상자 1개 더','w')}};
+var _dmb15=damageBosses;damageBosses=function(s,xp){_dmb15(s,cardIs('boss')?xp*2:xp)};
+var _petG15=petGain;petGain=function(xp,min){_petG15(cardIs('pet')?xp*3:xp,min)};
+/* ---------- 시즌 패스 ---------- */
+var SEP='2026-11-16',SPT=250;
+function seasonNo(){return Math.floor(Math.round((new Date(T()+'T00:00:00')-new Date(SEP+'T00:00:00'))/864e5)/28)+1}
+function seasonEnd(){return addDays(SEP,seasonNo()*28-1)}
+function spReward(i){if(i===30)return['final','시즌 한정 칭호 + 전설 상자 2 + 300G'];if(i===25)return['legend','전설 상자'];if(i===20)return['legend','전설 상자'];if(i===15)return['egg','동료 알'];if(i===10)return['rare2','희귀 상자 2'];if(i%5===0)return['rare','희귀 상자'];if(i===7||i===22)return['snack','동료 간식 2'];if(i===12)return['pf','집중의 물약'];if(i===27)return['pw','지혜의 물약'];return i%2?['g','30G']:['box','랜덤 상자']}
+function spGive(i,n){var r=spReward(i)[0];if(r==='final'){S.boxes.legend+=2;S.gold+=300;addTitle('season'+n,'시즌 '+n+' 정복자','l')}else if(r==='legend')S.boxes.legend++;else if(r==='egg')giveEgg('시즌 '+n+' 보상 알');else if(r==='rare2')S.boxes.rare+=2;else if(r==='rare')S.boxes.rare++;else if(r==='snack')S.pets.snack+=2;else if(r==='pf')S.pot.focus++;else if(r==='pw')S.pot.wisdom++;else if(r==='g')S.gold+=30;else S.boxes.rand++}
+function spTier(n){return Math.min(30,Math.floor((S.sp[n]||0)/SPT))}
+function spCheck(){var n=seasonNo(),tier=spTier(n),got=S.spGot[n]||0;if(tier<=got)return false;var lines=[];for(var i=got+1;i<=tier;i++){spGive(i,n);lines.push(i+'단계: '+spReward(i)[1])}S.spGot[n]=tier;
+  celebrate('시즌 패스 '+tier+'단계!',tier===30?'pur':'blue','시즌 '+n+' 보상을 받았어요',lines.slice(-6).map(esc).join('<br>'),tile(tier>=20?'chest_l':'chest_r',64));return true}
+var _addXP15=addXP;addXP=function(xp,stats,label){if(xp>0){if(cardIs('gold'))S.gf+=xp*.1;var n=seasonNo();S.sp[n]=(S.sp[n]||0)+xp*(cardIs('sp')?2:1)}_addXP15(xp,stats,label)};
+function seasonWin(){var n=seasonNo(),sp=S.sp[n]||0,tier=spTier(n),left=dLeft(seasonEnd()),cur=sp-tier*SPT;
+  var o='<div class="row" style="margin-bottom:6px"><span class="grow"><b class="gold" style="font-size:18px">'+tier+' / 30단계</b></span><span class="dim">'+(left>0?left+'일 남음':'오늘 종료')+' (~'+md(seasonEnd())+')</span></div>'+bar('',tier>=30?100:cur/SPT*100,tier>=30?'완주!':cur+' / '+SPT+' 시즌 XP');
+  o+='<div class="t" style="font-weight:700;margin:10px 0 4px">다음 보상</div>';for(var i=tier+1;i<=Math.min(30,tier+4);i++){var r=spReward(i);o+='<div class="line"><span class="badge'+(i%5===0?' y':'')+' num">'+i+'</span><span class="grow">'+r[1]+'</span></div>'}
+  if(tier<30&&tier+4<30)o+='<div class="line"><span class="badge y num">30</span><span class="grow">'+spReward(30)[1]+'</span></div>';
+  return win('시즌 '+n+' 패스','4주마다 새 시즌이 시작돼요. 이번 시즌에 얻은 XP '+SPT+'마다 1단계씩 올라가고, 보상은 자동으로 받아요. 30단계를 완주하면 이 시즌에만 주는 칭호를 받아요.',o,'시즌 XP '+sp.toLocaleString(),tile('chest_l',26))}
+
+/* ---------- 라이벌 ---------- */
+var RIV=[['이른새','새벽형 지원자','m',390,[6,20]],['한결','꾸준형 지원자','s',330,[9,23]],['막판','벼락치기 지원자','c',300,[13,26]]];
+var RPAT={m:[.8,1.1,1.1,1.1,1.1,1.1,.8],s:[1,1,1,1,1,1,1],c:[1.7,.4,.5,.7,.9,1.2,1.6]};
+var RDIFF=[.7,1,1.3];
+function rivWkOf(d){var dt=new Date(d+'T00:00:00');dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return fmt(dt)}
+function rivDay(r,d){var dw=new Date(d+'T00:00:00').getDay(),wd=S.rv.wd&&S.rv.wd[rivWkOf(d)],m=r[3]*RPAT[r[2]][dw]*RDIFF[wd!=null?wd:(S.rv.diff==null?1:S.rv.diff)]*(.75+.5*frac(r[0]+d));
+  if(d===T()){var now=new Date(),h=now.getHours()+now.getMinutes()/60;m*=Math.max(0,Math.min(1,(h-r[4][0])/(r[4][1]-r[4][0])))}else if(d>T())m=0;return Math.round(m)}
+function rivWeek(r,ws){var s=0;for(var i=0;i<7;i++)s+=rivDay(r,addDays(ws,i));return s}
+function myWeek(ws){var s=0;for(var i=0;i<7;i++)s+=dayMin(addDays(ws,i));return s}
+function board(ws){var a=RIV.map(function(r){return{n:r[0],t:r[1],m:rivWeek(r,ws),me:false}});a.push({n:S.name,t:'나',m:myWeek(ws),me:true});a.sort(function(x,y){return y.m-x.m||(x.me?-1:1)});return a}
+function rivCheck(){var ch=false;if(!S.rv.wd)S.rv.wd={};if(S.rv.wd[WK()]==null){S.rv.wd[WK()]=S.rv.diff==null?1:S.rv.diff;var wk=Object.keys(S.rv.wd).sort();while(wk.length>8)delete S.rv.wd[wk.shift()];ch=true}if(S.rv.last!==WK()){var ws=S.rv.last,b=board(ws),rk=b.findIndex(function(x){return x.me})+1;S.rv.last=WK();
+    if(myWeek(ws)>0){S.rv.hist.push({wk:ws,rk:rk,m:myWeek(ws)});S.rv.hist=S.rv.hist.slice(-26);var rw=['rare2','rare','rand2','rand'][rk-1];
+      if(rw==='rare2'){S.boxes.rare+=2;S.gold+=50;addTitle('rv1','라이벌 정복자','e')}else if(rw==='rare')S.boxes.rare++;else if(rw==='rand2')S.boxes.rand+=2;else S.boxes.rand++;
+      celebrate('주간 라이벌 '+rk+'위','', md(ws)+' 주 순위 결과',b.map(function(x,i){return (i+1)+'위 '+esc(x.n)+' '+hm(x.m)}).join('<br>')+'<br>보상: '+{rare2:'희귀 상자 2 + 50G',rare:'희귀 상자 1',rand2:'랜덤 상자 2',rand:'랜덤 상자 1'}[rw],tile('a_bwin',64))}ch=true}
+  var t=T(),h=new Date().getHours();if(S.rv.al!==t&&h>=15){var my=dayMin(t),top=RIV.map(function(r){return[r,rivDay(r,t)]}).sort(function(a,b){return b[1]-a[1]})[0];if(top[1]-my>=60){S.rv.al=t;ch=true;feed(top[0][0]+'이(가) 오늘 벌써 '+hm(top[1])+' 공부했어요. 따라잡아 볼까요?','b')}}
+  return ch}
+function rivWin(){var b=board(WK()),mx=Math.max(60,b[0].m),rk=b.findIndex(function(x){return x.me})+1;
+  var o=b.map(function(x,i){return '<div class="row" style="gap:8px;margin-top:8px"><b class="num" style="width:22px;color:'+(i===0?'var(--gold)':'var(--sub)')+'">'+(i+1)+'</b><span style="width:96px;font-size:13px'+(x.me?';color:var(--gold2);font-weight:700':'')+'">'+esc(x.n)+'<br><span class="dim">'+esc(x.t)+'</span></span><div class="grow"><div class="bar sm" style="--c:'+(x.me?'#ffcf4d':'#6f7a99')+'"><i style="width:calc('+(x.m/mx*100).toFixed(1)+'% - 4px)"></i></div></div><span class="dim num" style="width:70px;text-align:right">'+hm(x.m)+'</span></div>'}).join('');
+  var gap=rk>1?b[rk-2].m-b[rk-1].m:0;o+='<div class="sub" style="margin-top:8px">'+(rk===1?'지금 1위예요! 월요일까지 지키면 희귀 상자 2개 + 50G':'한 단계 위까지 '+hm(gap)+' 차이')+'</div><div class="dim">월요일에 지난주 순위로 보상: 1위 희귀 상자 2 + 50G, 2위 희귀 상자, 3위 랜덤 상자 2, 4위 랜덤 상자</div>';
+  return win('주간 라이벌','같은 금융공기업을 노리는 가상의 지원자 셋과 이번 주 공부 시간을 겨뤄요. 라이벌도 자기 성향대로 매일 공부해요. 난이도는 설정에서 바꿀 수 있어요.',o,rk+'위')}
+
+/* ---------- 주간 레이드 ---------- */
+var RAIDS=[['고대 시험지 드래곤','m_필기_S0'],['장부의 거인','m_서류_S0'],['심문관 군주','m_면접_S0'],['문장 가고일 왕','m_시험_S0'],['망각의 히드라','m_필기_S1'],['마감의 리치 왕','m_면접_S1'],['서류더미 타이탄','m_서류_S1'],['인장 골렘 대장','m_시험_S1']];
+var RWEAK=[['fm'],['fa','cs1'],['fm'],['bm'],['ncs'],['cs1','cs2','tuw'],['fa','cs1']],RWN=['재무관리','재무회계','재무관리','경영학','NCS','자격증','재무회계'],RHP=2400;
+function raidOf(ws){return RAIDS[Math.round((new Date(ws+'T00:00:00')-new Date(SEP+'T00:00:00'))/(7*864e5))%RAIDS.length|0]||RAIDS[0]}
+function raidDmg(ws){var s=0;for(var i=0;i<7;i++){var d=addDays(ws,i);s+=dayMin(d)+subMin(d,RWEAK[new Date(d+'T00:00:00').getDay()])}return s}
+function raidCheck(){var ch=false,ws=WK(),r=raidOf(ws);
+  if(!S.raid.kill[ws]&&raidDmg(ws)>=RHP){S.raid.kill[ws]=1;S.boxes.legend++;S.gold+=100;addTitle('raid_'+r[0],r[0]+' 토벌자','e');ch=true;celebrate('레이드 토벌!','', '「'+r[0]+'」 쓰러뜨림','전설 상자 1 + 100G + 칭호',tile(r[1],96))}
+  if(S.raid.last!==ws){var pw=S.raid.last,pd=raidDmg(pw);S.raid.last=ws;ch=true;if(!S.raid.kill[pw]&&pd>0){var p=pd/RHP;if(p>=.5){S.boxes.rare++;feed('지난주 레이드 '+Math.round(p*100)+'%: 희귀 상자 1개','w')}else if(p>=.25){S.boxes.rand++;feed('지난주 레이드 '+Math.round(p*100)+'%: 랜덤 상자 1개','w')}}var ks=Object.keys(S.raid.kill).sort();while(ks.length>30)delete S.raid.kill[ks.shift()]}
+  return ch}
+function raidWin(){var ws=WK(),r=raidOf(ws),dmg=raidDmg(ws),left=Math.max(0,RHP-dmg),dw=new Date().getDay(),kill=S.raid.kill[ws];
+  var o='<div class="arena" style="background-image:url(tex_arena.png);background-size:128px 128px"><span class="mon"'+(kill?' style="filter:grayscale(1);opacity:.5"':'')+'>'+tile(r[1],112)+'</span><span class="dd">'+(kill?'토벌 완료':'D-'+(7-((dw+6)%7)-1<=0?'DAY':(7-((dw+6)%7)-1)))+'</span></div>';
+  o+='<b style="font-size:17px">'+r[0]+'</b>'+'<div style="margin-top:8px">'+bar('boss',left/RHP*100,'HP '+left.toLocaleString()+' / '+RHP.toLocaleString())+'</div>';
+  o+='<div class="sub" style="margin-top:6px">오늘 약점: <b class="gold">'+RWN[dw]+'</b> (이 과목 공부는 데미지 2배)</div><div class="dim">공부 1분 = 1 데미지. 월요일 전까지 쓰러뜨리면 전설 상자 + 100G + 칭호. 못 잡아도 절반 이상이면 희귀 상자, 4분의 1 이상이면 랜덤 상자.</div>';
+  o+='<div class="row wrap" style="gap:4px;margin-top:8px">'+[1,2,3,4,5,6,0].map(function(d){return '<span class="badge'+(d===dw?' y':'')+'">'+DOW[d]+' '+RWN[d]+'</span>'}).join('')+'</div>';
+  return win('주간 레이드','매주 월요일에 새 레이드 보스가 나타나요. 이번 주 공부 시간으로 함께 깎아요.',o,kill?'토벌!':Math.round(dmg/RHP*100)+'%')}
+
+/* ---------- 장비 세트 ---------- */
+var SETS=[['knight','기사단',['head_rank','body_plate','feet_rank','weapon_arming','shield_rank']],['mage','대마법사',['head_wizard','body_frock','feet_rim','weapon_crystal','back_purple']],['gold','황금왕',['head_horned','body_plate_g','feet_gold','weapon_arming_g','back_gold']],['pirate','해적 선장',['head_tricorne','body_frock_k','feet_boots_k','weapon_saber','back_tat_black']],['angel','천사',['head_tiara_s','body_frock_w','feet_white','weapon_crystal_w','back_angel']],['dragon','용기사',['head_viking','body_plate_s','weapon_halberd','shield_crusader','back_drag_red']],['legion','로마 군단',['head_legion','body_legion_s','feet_sandals','weapon_spear','shield_round_s']],['gent','신사',['head_tophat_k','body_coll_k','feet_black','weapon_rapier','back_black']]];
+function setWorn(st){return st[2].filter(function(id){var it=ITEM[id];return it&&S.eq[it.slot]===id}).length}
+function setBonus(){var b=0,nm='';SETS.forEach(function(st){var w=setWorn(st),v=w>=5?.07:w>=3?.03:0;if(v>b){b=v;nm=st[1]}});return[b,nm]}
+function setCheck(){var ch=false;SETS.forEach(function(st){if(setWorn(st)>=5&&!S.setT[st[0]]){S.setT[st[0]]=1;addTitle('set_'+st[0],st[1]+' 세트 완성','l');ch=true;celebrate('세트 완성!','pur','「'+st[1]+'」 세트','모든 공부 XP +7% · 칭호 「'+st[1]+' 세트 완성」','')}});return ch}
+function setWin(){var o=SETS.map(function(st){var own=st[2].filter(function(id){return S.own.indexOf(id)>=0}).length,w=setWorn(st);
+  return '<div class="line"><span class="grow"><span class="t">'+st[1]+' 세트</span> <span class="dim">보유 '+own+'/5 · 착용 '+w+'/5</span><br><span class="s">'+st[2].map(function(id){return S.own.indexOf(id)>=0?esc(ITEM[id].n):'???'}).join(', ')+'</span></span>'+(w>=5?'<span class="badge y">+7%</span>':w>=3?'<span class="badge g">+3%</span>':'')+'</div>'}).join('');
+  var sb=setBonus();return win('장비 세트','같은 세트 장비를 3개 입으면 모든 공부 XP +3%, 5개 모두 입으면 +7%와 칭호를 받아요. 아직 없는 장비 이름은 비밀이에요.',o,sb[0]?sb[1]+' +'+Math.round(sb[0]*100)+'%':'')}
+/* 배율 */
+var _mp15=multParts;multParts=function(stats,kind){var p=_mp15(stats,kind);
+  if(cardIs('all30'))p.push(['운명 카드',.3]);if(cardIs('xp2')){var cs=S.card.sub;if(stats.indexOf(cs)>=0)p.push(['운명 카드',1])}
+  var sb=setBonus();if(sb[0])p.push([sb[1]+' 세트',sb[0]]);return p};
+
+/* ---------- 스토리 ---------- */
+var STORY=[
+ ['프롤로그: 황금 길드의 문',function(){return true},'대륙 최고의 금융 길드, 황금 길드는 해마다 봄이면 문을 연다. 견습 서기 {n}은(는) 낡은 장부 한 권과 나무 지팡이를 들고 길드 앞에 섰다. 문지기 부엉이 마르그가 말했다. "시험지 드래곤을 넘어서는 자만이 이 문을 지날 수 있다."'],
+ ['1화: 첫 번째 장부',function(){return lvOf(S.xp,needL).l>=3},'마르그는 먼지 쌓인 장부를 내밀었다. "차변과 대변이 맞지 않는 장부는 길드를 무너뜨린다." {n}은(는) 밤새 숫자를 맞췄고, 새벽녘 장부의 금빛 테두리가 처음으로 반짝였다.'],
+ ['2화: 장부 기사의 맹세',function(){return lvOf(S.xp,needL).l>=5},'"장부 기사는 숫자 앞에서 거짓말하지 않는다." 첫 계급장을 단 {n}에게 마르그가 투구를 씌워 주었다. 멀리 북쪽 산맥에서 시험지 드래곤의 울음이 들려왔다.'],
+ ['3화: 지하 던전의 소문',function(){return S.dg&&S.dg.best>=20},'길드 지하에는 공부한 시간만큼만 내려갈 수 있는 던전이 있다고 했다. 20층에서 {n}은(는) 벽에 새겨진 글귀를 발견했다. "답을 외운 자는 길을 잃고, 원리를 아는 자는 길을 만든다."'],
+ ['4화: 첫 번째 전직',function(){return S.job&&S.job.tier>=1},'길드의 거울 앞에서 {n}의 모습이 바뀌었다. 가장 오래 갈고닦은 두 능력이 하나의 직업이 되었다. 마르그가 처음으로 웃었다. "이제야 길드원 같구나."'],
+ ['5화: 첫 번째 결투',function(){return S.bosses.some(function(b){return b.res})},'첫 보스와 맞선 날, 결과가 어떻든 {n}은(는) 알게 되었다. 드래곤은 무서운 존재가 아니라 준비의 양을 비추는 거울이라는 것을. "진 싸움에서도 경험치는 남는다." 마르그의 말이었다.'],
+ ['6화: 길드 회계관',function(){return lvOf(S.xp,needL).l>=15},'회계관의 인장을 받은 {n}에게 길드의 금고 열쇠가 맡겨졌다. 금고 안에는 이전 합격자들이 남긴 쪽지가 가득했다. 가장 많이 적힌 말은 "매일 조금씩"이었다.'],
+ ['7화: 심연 60층',function(){return S.dg&&S.dg.best>=60},'60층의 공기는 무거웠다. 오답 유령들이 지나간 실수를 속삭였지만, {n}은(는) 오답 노트를 펼쳐 하나씩 이름을 불러 주었다. 이름이 불린 유령은 빛이 되어 사라졌다.'],
+ ['8화: 왕실 재무관',function(){return lvOf(S.xp,needL).l>=20},'왕실 재무관의 예복은 생각보다 무거웠다. "무게는 책임의 다른 이름이다." 마르그는 지도 한 장을 건넸다. 시험지 드래곤의 둥지가 표시되어 있었다.'],
+ ['9화: 꺼지지 않는 등불',function(){return streak().n>=14},'14일 동안 {n}의 창가 등불은 한 번도 꺼지지 않았다. 길드 사람들은 그 불빛을 보고 길을 찾았다. 꾸준함은 이제 {n}의 가장 강한 무기가 되었다.'],
+ ['10화: 황금 현자',function(){return lvOf(S.xp,needL).l>=25},'황금 현자의 계급에 오른 날, 드래곤의 둥지로 가는 다리가 나타났다. 마르그가 마지막으로 물었다. "준비되었느냐?" {n}은(는) 대답 대신 장부를 펼쳤다.'],
+ ['최종화: 드래곤을 넘어서',function(){return S.bosses.some(function(b){return b.stage==='필기'&&b.res==='win'})},'시험지 드래곤이 쓰러지고, 황금 길드의 문이 활짝 열렸다. 문 너머에는 면접의 성이 기다리고 있었다. 하지만 {n}은(는) 이제 안다. 여기까지 온 힘이라면, 다음 문도 열 수 있다는 것을.']
+];
+function storyCheck(){var ch=false;STORY.forEach(function(s,i){if(S.story.seen.indexOf(i)<0&&s[1]()){S.story.seen.push(i);ch=true;if(i>0)feed('새 이야기가 열렸어요: '+s[0],'b')}});return ch}
+function vStory(){var h=head('황금 길드 이야기','레벨, 던전 층수, 전직, 보스전에 따라 이야기가 한 화씩 열려요. 새 화를 처음 읽으면 30G를 받아요.');
+  STORY.forEach(function(s,i){var open=S.story.seen.indexOf(i)>=0,read=S.story.read.indexOf(i)>=0;
+    h+='<section class="win"><h2>'+(open?esc(s[0]):'??? (잠김)')+(open&&!read?'<span class="meta"><span class="badge y">NEW</span></span>':'')+'</h2>'+(open?(read?'<p style="margin:0">'+esc(s[2].split('{n}').join(S.name))+'</p>':'<button class="btn sm" data-a="storyread" data-v="'+i+'">읽기 (+30G)</button>'):'<p class="dim" style="margin:0">조건을 채우면 열려요.</p>')+'</section>'});
+  return h+'<button class="btn ghost wide" style="margin-top:4px" data-a="tab" data-v="home">캐릭터로 돌아가기</button>'}
+A.storyread=function(e){var i=+e.dataset.v;if(S.story.seen.indexOf(i)<0||S.story.read.indexOf(i)>=0)return;S.story.read.push(i);S.gold+=30;sfx('fan');save();render()};
+
+/* ---------- 필기 점수 예측 ---------- */
+function predTarget(){var b=S.bosses.filter(function(x){return !x.res&&x.stage==='필기'&&x.date&&dLeft(x.date)>=0}).sort(function(a,c){return a.date.localeCompare(c.date)})[0];if(b)return{d:b.date,n:b.org+' 필기'};var ns=nextSched();return ns?{d:ns.exam,n:ns.org+' 필기'+(ns.est?' (예상일)':'')}:null}
+function predict(k,td){var rows=(S.scores||[]).filter(function(r){return r.s===k}).map(function(r){return[Math.round((new Date(r.d+'T00:00:00')-new Date('2026-01-01T00:00:00'))/864e5),r.v/r.m*100]});var days={};rows.forEach(function(r){days[r[0]]=1});if(Object.keys(days).length<3)return null;
+  var n=rows.length,sx=0,sy=0,sxx=0,sxy=0;rows.forEach(function(r){sx+=r[0];sy+=r[1];sxx+=r[0]*r[0];sxy+=r[0]*r[1]});var den=n*sxx-sx*sx,b=den?(n*sxy-sx*sy)/den:0;b=Math.max(-1,Math.min(1,b));var a=(sy-b*sx)/n;
+  var sd=Math.sqrt(rows.reduce(function(s,r){var e=r[1]-(a+b*r[0]);return s+e*e},0)/Math.max(1,n-2)),lx=Math.max.apply(null,rows.map(function(r){return r[0]})),tx=Math.min(Math.round((new Date(td+'T00:00:00')-new Date('2026-01-01T00:00:00'))/864e5),lx+56),p=a+b*tx,w=Math.max(5,sd)+Math.max(0,tx-lx)/14;
+  return{p:Math.max(0,Math.min(100,p)),lo:Math.max(0,Math.min(100,p-w)),hi:Math.max(0,Math.min(100,p+w)),wk:b*7,n:n}}
+function predHtml(){var t=predTarget();if(!t)return '<div class="dim" style="margin-top:10px">필기 보스나 공고 일정이 있으면 시험일 예상 점수가 나와요.</div>';
+  var o='<div class="t" style="font-weight:700;margin:12px 0 4px">'+esc(t.n)+' '+md(t.d)+' 예상 점수</div>';
+  o+=SC.map(function(s){var r=predict(s[0],t.d);return '<div class="line"><span class="dot" style="background:'+s[3]+'"></span><span class="grow">'+s[1]+(r?'<br><span class="s">일주일에 '+(r.wk>=0?'+':'')+r.wk.toFixed(1)+'점씩 '+(r.wk>=0?'오르는':'내리는')+' 중 · 기록 '+r.n+'회</span>':'<br><span class="s">서로 다른 날 3회 이상 기록하면 예측해요</span>')+'</span>'+(r?'<b class="gold num">'+Math.round(r.lo)+'~'+Math.round(r.hi)+'점</b>':'<span class="dim">-</span>')+'</div>'}).join('');
+  return o+'<div class="dim" style="margin-top:4px">지금까지의 점수 흐름으로 추정했어요. 시험이 8주보다 멀면 8주 뒤까지만 늘려 잡아요. 참고용으로만 보세요.</div>'}
+var _scoreWin15=scoreWin;scoreWin=function(){var h=_scoreWin15(),e=h.lastIndexOf('</section>');return h.slice(0,e)+predHtml()+h.slice(e)};
+
+/* ---------- 화면 연결 ---------- */
+var _vHome15=vHome;vHome=function(){if(tab==='story')return vStory();var h=_vHome15();if(tab==='set')return h;
+  var b=board(WK()),rk=b.findIndex(function(x){return x.me})+1,n=seasonNo(),ws=WK(),r=raidOf(ws),dmg=raidDmg(ws),newS=S.story.seen.filter(function(i){return S.story.read.indexOf(i)<0}).length;
+  var add=cardRow()+'<div class="inset">'+tile('a_bwin',32)+'<div class="grow"><div class="k">주간 라이벌</div><div class="v">'+rk+'위 <span class="dim">/ '+b.length+'명</span>'+(rk>1?' <span class="sub">'+esc(b[rk-2].n)+'까지 '+hm(b[rk-2].m-b[rk-1].m)+'</span>':'')+'</div></div><button class="btn sm ghost" data-a="tab" data-v="quest">순위</button></div>'+
+    '<div class="inset">'+tile(r[1],32)+'<div class="grow"><div class="k">주간 레이드 · '+esc(r[0])+'</div><div class="v num">'+(S.raid.kill[ws]?'<span class="gold">토벌 완료</span>':Math.round(Math.min(1,dmg/RHP)*100)+'%')+'</div></div><button class="btn sm ghost" data-a="tab" data-v="boss">레이드</button></div>'+
+    '<div class="inset">'+tile('chest_l',32)+'<div class="grow"><div class="k">시즌 '+n+' 패스</div><div class="v num">'+spTier(n)+' / 30단계</div></div><button class="btn sm ghost" data-a="tab" data-v="quest">보상</button></div>';
+  h=h.replace('<div class="todo">','<div class="todo">'+add);
+  h=h.replace('<button class="btn ghost" data-a="help">게임 방법</button>','<button class="btn ghost" data-a="tab" data-v="story">이야기'+(newS?' <span class="badge y">NEW '+newS+'</span>':'')+'</button><button class="btn ghost" data-a="help">게임 방법</button>');
+  return h};
+var _vQuest15=vQuest;vQuest=function(){var h=_vQuest15();return insBefore(h,'<h2>보물 상자',rivWin()+seasonWin())};
+var _vBoss15=vBoss;vBoss=function(){var h=_vBoss15(),i=h.indexOf('</div>')+6;return h.slice(0,i)+raidWin()+h.slice(i)};
+var _vCoordi15=vCoordi;vCoordi=function(){return _vCoordi15()+setWin()};
+var _vSet15=vSet;vSet=function(){var h=_vSet15(),i=h.indexOf('<h2>알림');var w=win('라이벌 난이도','라이벌이 하루에 공부하는 양이 달라져요. 바꾸면 다음 주 월요일부터 적용돼요.',seg('rvdiff',String(S.rv.diff==null?1:S.rv.diff),[['0','쉬움'],['1','보통'],['2','어려움']]));if(i<0)return h+w;var s=h.lastIndexOf('<section',i);return h.slice(0,s)+w+h.slice(s)};
+var _setseg15=A.setseg;A.setseg=function(e){if(e.dataset.k==='rvdiff'){S.rv.diff=+e.dataset.v;feed('라이벌 난이도는 다음 주부터 바뀌어요','w');save();render();return}_setseg15(e)};
+var _vHelp15=vHelp;vHelp=function(){var h=_vHelp15(),i=h.lastIndexOf('</section>');
+  return h.slice(0,i)+'<h3>31. 오늘의 운명 카드</h3><p>하루에 한 번 카드 세 장 중 하나를 골라요. 과목 XP 2배, 골드 2배, 퀘스트 상자 2배 같은 효과가 그날 하루 이어져요. 목표 시간 전에 일어나면 한 번 더 뽑을 수 있어요.</p>'+
+  '<h3>32. 시즌 패스</h3><p>4주마다 새 시즌이 열려요. 시즌 동안 얻은 XP 250마다 1단계씩, 30단계까지 보상을 자동으로 받아요. 30단계를 완주하면 그 시즌 한정 칭호를 받아요.</p>'+
+  '<h3>33. 주간 라이벌</h3><p>가상의 지원자 셋(이른새, 한결, 막판)과 주간 공부 시간을 겨뤄요. 월요일에 순위에 따라 보상을 받아요.</p>'+
+  '<h3>34. 주간 레이드</h3><p>매주 새 레이드 보스가 나와요. 공부 1분이 1 데미지이고, 요일마다 정해진 약점 과목은 2배예요.</p>'+
+  '<h3>35. 장비 세트</h3><p>세트 장비를 3개 입으면 XP +3%, 5개 모두 입으면 +7%와 칭호를 받아요.</p>'+
+  '<h3>36. 이야기</h3><p>캐릭터 화면의 「이야기」에서 황금 길드 이야기를 읽어요. 성장할수록 새 화가 열려요.</p>'+
+  '<h3>37. 필기 점수 예측</h3><p>모의고사 점수를 서로 다른 날 3번 이상 기록하면, 보스 탭에서 다음 필기일의 예상 점수 범위를 보여줘요.</p>'+h.slice(i)};
+ANAME.storyread='이야기 읽기';
+var _mig15=migrate;migrate=function(){_mig15();p15init()};p15init();
+var _render15=render;render=function(){p12init();p13init();p15init();var c=false;if(rivCheck())c=true;if(raidCheck())c=true;if(spCheck())c=true;if(setCheck())c=true;if(storyCheck())c=true;if(c)save();_render15()};
+
+/* ========== p16: UI 정리 — 탭 안 작은 탭, 오늘 카드 2열, 간단히 보기 ========== */
+APP_VER='1.5.0';
+var SUBDEF={
+  home:[['today','오늘',[]],['grow','성장',['능력치','스펙 훈장','업적']]],
+  timer:[['study','공부',[]],['rec','기록',['문제 풀이','이론 단원','오답 단원','운동','빠뜨린 시간','모의고사 점수']],['job','취업 준비',['면접 질문','자소서 문항','면접 준비','지원서 제출']]],
+  quest:[['today','오늘',[]],['week','이번 주',['주간 라이벌','공부 계획표','주간 퀘스트']],['event','시즌·이벤트',['패스','12월 챌린지']]],
+  boss:[['boss','내 보스',[]],['sched','공고 일정',['공고 일정']],['score','성적·예측',['모의고사 성적']]],
+  shop:[['gear','장비',['오늘의 진열대']],['item','아이템·쿠폰',['쿠폰','물약과 상자']]],
+  log:[['stat','통계',[]],['hist','기록',['최근 기록','실수 되돌리기']]],
+  set:[['basic','기본',[]],['sound','소리',['사운드','주크박스']],['data','데이터',['백업','홈 화면','데이터 초기화','정보']]]
+};
+var SUBT={};try{SUBT=JSON.parse(sessionStorage.getItem('jrpg_sub')||'{}')}catch(e){}
+function subSave(){try{sessionStorage.setItem('jrpg_sub',JSON.stringify(SUBT))}catch(e){}}
+function chunkTab(D,c){var m=c.match(/<h2>([\s\S]*?)<\/h2>/);if(!m)return D[0][0];var t=m[1].replace(/<[^>]*>/g,'');for(var i=1;i<D.length;i++)if(D[i][2].some(function(k){return t.indexOf(k)>=0}))return D[i][0];return D[0][0]}
+function splitTabs(h,page){var D=SUBDEF[page];if(!D)return h;var cur=SUBT[page];if(!D.some(function(d){return d[0]===cur}))cur=D[0][0];
+  var ph='',pos=0;if(h.indexOf('<div class="pagehead">')===0){pos=h.indexOf('</div>')+6;ph=h.slice(0,pos)}
+  var chunks=[],tail='';while(true){var s=h.indexOf('<section',pos);if(s<0){tail=h.slice(pos);break}var e=h.indexOf('</section>',s);if(e<0){tail=h.slice(pos);break}e+=10;chunks.push(h.slice(pos,e));pos=e}
+  var cnt={};chunks.forEach(function(c){var k=chunkTab(D,c);cnt[k]=(cnt[k]||0)+1});
+  var bar='<div class="subtabs" role="tablist">'+D.map(function(d){return '<button role="tab" class="'+(d[0]===cur?'on':'')+'" aria-selected="'+(d[0]===cur)+'" data-a="subt" data-p="'+page+'" data-v="'+d[0]+'">'+d[1]+'</button>'}).join('')+'</div>';
+  return ph+bar+chunks.filter(function(c){return chunkTab(D,c)===cur}).join('')+tail}
+A.subt=function(e){SUBT[e.dataset.p]=e.dataset.v;subSave();sel=null;render();var b=document.querySelector('.subtabs');if(b&&b.getBoundingClientRect().top<0)scrollTo(0,window.scrollY+b.getBoundingClientRect().top-8)};
+NOUNDO.subt=1;
+/* 다른 탭으로 가는 버튼이 알맞은 작은 탭을 열도록 */
+var JUMP={'순위':'week','계획 짜기':'week','보상':'event','보기':'event','레이드':'boss','보스':'boss','일정':'sched','결산':'stat','탐험':'study','타이머':'study','퀘스트':'today','열기':'today','모의고사 성적 기록하러 가기':'score'};
+function addJump(h){return h.replace(/data-a="tab" data-v="(\w+)">([^<]+)</g,function(m,v,lab){var s=JUMP[lab.trim()];return s?'data-a="tab" data-v="'+v+'" data-s="'+s+'">'+lab+'<':m})}
+JUMP['상점으로']='gear';
+var _Atab16=A.tab;A.tab=function(e){if(e.dataset.s){SUBT[e.dataset.v]=e.dataset.s;subSave()}else if(e.dataset.v==='timer'&&S.timer){SUBT.timer='study';subSave()}_Atab16(e)};
+var _vCoordi16=vCoordi;vCoordi=function(){return addJump(_vCoordi16())};
+/* 화면별 연결 */
+var _vHome16=vHome;vHome=function(){var h=_vHome16();if(tab==='story')return h;return addJump(splitTabs(h,tab==='set'?'set':'home'))};
+var _vTimer16=vTimer;vTimer=function(){return addJump(splitTabs(_vTimer16(),'timer'))};
+var _vQuest16=vQuest;vQuest=function(){return addJump(splitTabs(_vQuest16(),'quest'))};
+var _vBoss16=vBoss;vBoss=function(){return addJump(splitTabs(_vBoss16(),'boss'))};
+var _vShop16=vShop;vShop=function(){return splitTabs(_vShop16(),'shop')};
+var _vLog16=vLog;vLog=function(){return addJump(splitTabs(_vLog16(),'log'))};
+/* 자소서·면접 편집 중에는 취업 준비 탭 유지 */
+['esopen','esadd'].forEach(function(k){var f=A[k];A[k]=function(e){SUBT.timer='job';subSave();f(e)}});
+/* 오늘 카드 정렬 (중요한 것 먼저) */
+var TODO_ORDER=['오늘 목표','오늘의 운명','오늘의 카드','오늘 공부 계획','오늘 공부 시간','일일 퀘스트','다음 보스','다음 공고','주간 레이드','주간 라이벌','시즌','던전','12월','연말','안 연 상자','이번 주 결산','알 부화','백업','오늘은 휴식일'];
+function todoSort(){var box=document.querySelector('#app .todo');if(!box)return;var items=[].slice.call(box.children);
+  function pr(el){var k=el.querySelector('.k');k=k?k.textContent:'';for(var i=0;i<TODO_ORDER.length;i++)if(k.indexOf(TODO_ORDER[i])===0)return i;return 99}
+  items.map(function(el,i){return[pr(el),i,el]}).sort(function(a,b){return a[0]-b[0]||a[1]-b[1]}).forEach(function(x){box.appendChild(x[2])})}
+/* 간단히 보기 설정 */
+var _vSet16=vSet;vSet=function(){var h=_vSet16(),i=h.indexOf('data-a="settog" data-k="fx"');if(i<0)return h;var e=h.indexOf('</div>',h.indexOf('</button>',i))+6;
+  return h.slice(0,e)+tog('compact',!!S.set.compact,'간단히 보기','창마다 붙은 설명 문구를 숨겨서 화면을 짧게 만들어요')+h.slice(e)};
+var _applyLook16=applyLook;applyLook=function(){_applyLook16();if(S.set)document.body.classList.toggle('compact',!!S.set.compact)};
+(function(){var st=document.createElement('style');st.textContent=
+ '.subtabs{position:sticky;top:0;z-index:15;display:flex;gap:4px;margin:6px 0 4px;padding:6px 2px;background:var(--bg)}'+
+ '.subtabs button{flex:1;border:0;border-radius:2px;padding:9px 4px;background:var(--panel2);box-shadow:inset 0 0 0 2px var(--edge);color:var(--sub);font-size:13.5px;cursor:pointer}'+
+ '.subtabs button.on{background:var(--gold);color:#2a1d00;font-weight:700}'+
+ '.todo{grid-template-columns:1fr 1fr}'+
+ '.todo>.inset{flex-direction:column;align-items:flex-start;gap:6px;padding:10px;min-width:0}'+
+ '.todo>.inset>.grow{width:100%}.todo>.inset .k{font-size:12px}.todo>.inset .v{font-size:14px;line-height:1.35;word-break:keep-all}'+
+ '.todo>.inset>.btn{width:100%;min-height:32px;padding:4px 8px;margin-top:auto}'+
+ '.todo>.inset[style*="display:block"]{grid-column:1/-1}'+
+ 'body.compact .win>.desc{display:none}body.compact .pagehead p{display:none}';
+ document.head.appendChild(st)})();
+var _vHelp16=vHelp;vHelp=function(){var h=_vHelp16(),i=h.lastIndexOf('</section>');return h.slice(0,i)+'<h3>38. 화면 정리</h3><p>탭마다 위쪽에 작은 탭이 있어요. 예를 들어 타이머 탭은 공부, 기록, 취업 준비로 나뉘어요. 설정의 「간단히 보기」를 켜면 설명 문구가 숨겨져 화면이 짧아져요.</p>'+h.slice(i)};
+var _render16=render;render=function(){_render16();todoSort()};
 
 /* ========== 시작 ========== */
 render();
