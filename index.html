@@ -184,7 +184,7 @@ details.more[open]>summary:before{content:"▼ "}
 .spr{position:relative;margin:0 auto;--s:3}
 .spr i{position:absolute;inset:0;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges}
 .spr.walk i{animation:walkf .9s steps(8) infinite}
-@keyframes walkf{from{background-position-x:calc(var(--s) * -64px)}to{background-position-x:calc(var(--s) * -576px)}}
+@keyframes walkf{from{background-position-x:calc(var(--ox,0px) + var(--s) * -64px)}to{background-position-x:calc(var(--ox,0px) + var(--s) * -576px)}}
 .it .spr{position:absolute;left:50%;top:50%}
 /* 이펙트 입자 */
 .fx{position:absolute;inset:-20px;pointer-events:none;z-index:4}
@@ -711,7 +711,7 @@ function awayCheck(gapMs){
 document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();try{localStorage.setItem('jrpg_seen',hiddenAt)}catch(e){}}else if(hiddenAt){var g=Date.now()-hiddenAt;hiddenAt=0;awayCheck(g)}});
 setInterval(function(){if(!document.hidden){try{localStorage.setItem('jrpg_seen',Date.now())}catch(e){}}var el=$('#tbig');if(el&&S.timer){var s=Math.floor(tElapsed()/1000);el.textContent=pad(Math.floor(s/3600))+':'+pad(Math.floor(s/60)%60)+':'+pad(s%60);var x=$('#txp');if(x){var m=Math.floor(s/60);x.textContent='지금 멈추면 +'+Math.round(m*0.5*multOf(SUB[S.timer.sub].st,'time'))+' XP'}}},1000);
 /* ========== LPC 도트 캐릭터 ========== */
-var SHEET='sprites.png';
+var SHEET='sprites.png',SPRC=112,SPRCOLS=4;
 function migrate(){
   if(!S.eq.head){var mp={tie:'head',suit:'body',shoe:'feet',bag:'weapon'};
     S.own=S.own.map(function(id){for(var k in mp)if(id.indexOf(k+'_')===0)return mp[k]+id.slice(k.length);return id});
@@ -728,8 +728,8 @@ function avatar(look,eq,opt){
   var sk=SPR.skins[look.skin]||SPR.skins[0],hk=(SPR.hairKeys[look.hair]||SPR.hairKeys[0])+'_'+(SPR.hcol[look.hc]||SPR.hcol[0]);
   L=L.concat(SPR.skin[sk],SPR.hair[hk]);GSLOTS.forEach(function(sl){L=L.concat(SPR.items[eq[sl]||sl+'_base']||[])});
   L.sort(function(a,b){return a[1]-b[1]});
-  var bs=(576*s)+'px '+(SPR.rows*64*s)+'px';
-  return '<div class="spr'+(opt.walk?' walk':'')+'" style="--s:'+s+';width:'+64*s+'px;height:'+64*s+'px'+(opt.style?';'+opt.style:'')+'">'+L.map(function(l){return '<i style="background-image:url('+SHEET+');background-size:'+bs+';background-position:'+(-f*64*s)+'px '+(-l[0]*64*s)+'px"></i>'}).join('')+'</div>';
+  var bs=(576*SPRCOLS*s)+'px '+(SPRC*64*s)+'px';
+  return '<div class="spr'+(opt.walk?' walk':'')+'" style="--s:'+s+';width:'+64*s+'px;height:'+64*s+'px'+(opt.style?';'+opt.style:'')+'">'+L.map(function(l){var ox=-Math.floor(l[0]/SPRC)*576*s;return '<i style="--ox:'+ox+'px;background-image:url('+SHEET+');background-size:'+bs+';background-position:'+(ox-f*64*s)+'px '+(-(l[0]%SPRC)*64*s)+'px"></i>'}).join('')+'</div>';
 }
 function itemThumb(it){
   if(it.slot==='fx'){var col=it.ic;return rosette(80,col,7,.95,{inner:14,outer:44,k:col==='rainbow'?16:14+it.n.length,sw:.7})}
@@ -1600,6 +1600,377 @@ var _vLog11=vLog;vLog=function(){var h=_vLog11(),i=h.indexOf('</div>')+6;h=h.sli
   return h};
 var _vHelp11=vHelp;vHelp=function(){var h=_vHelp11(),i=h.lastIndexOf('</section>');
   return h.slice(0,i)+'<h3>17. 하루 목표 시간</h3><p>기본 6시간이에요. 캐릭터 화면과 타이머에 오늘 진행률이 나오고, 처음 채운 날마다 랜덤 상자를 받아요. 기록·설정 탭에서 바꿀 수 있어요.</p><h3>18. 공부 잔디</h3><p>기록·설정 탭에 최근 18주 공부 시간이 달력으로 나와요. 칸을 누르면 그날 과목별 시간과 문제 수를 볼 수 있어요.</p><h3>19. 실수 되돌리기</h3><p>기록하거나 구매하면 화면 아래에 「되돌리기」가 잠깐 떠요. 놓쳤으면 기록·설정 탭에서 가장 최근 작업 하나를 되돌릴 수 있어요.</p>'+h.slice(i)};
+
+/* ========== p12: 사운드·퀘스트 개편·인턴 보스·공고 확대·망토와 날개·설정 탭·계획표·자소서·알림·통계·이론 ========== */
+APP_VER='1.2.0';
+/* ---------- 망토·날개 (back 슬롯) ---------- */
+var BACK={"items": {"back_base": [], "back_red": [[369, 5], [370, 85], [371, 92]], "back_navy": [[372, 5], [373, 85], [374, 92]], "back_black": [[375, 5], [376, 85], [377, 92]], "back_green": [[378, 5], [379, 85], [380, 92]], "back_purple": [[381, 5], [382, 85], [383, 92]], "back_white": [[384, 5], [385, 85], [386, 92]], "back_red_gold": [[387, 5], [388, 85], [389, 90], [390, 92]], "back_navy_gold": [[391, 5], [392, 85], [393, 90], [394, 92]], "back_white_silver": [[395, 5], [396, 85], [397, 90], [398, 92]], "back_gold": [[399, 5], [400, 85], [401, 90], [402, 92]], "back_purple_gold": [[403, 5], [404, 85], [405, 90], [406, 92]], "back_tat_black": [[407, 5], [408, 85], [409, 92]], "back_tat_red": [[410, 5], [411, 85], [412, 92]], "back_tat_gray": [[413, 5], [414, 85], [415, 92]], "back_angel": [[416, 5], [417, 105]], "back_fallen": [[418, 5], [419, 105]], "back_wgold": [[420, 5], [421, 105]], "back_wblue": [[422, 5], [423, 105]], "back_bat": [[424, 5], [425, 105]], "back_bat_red": [[426, 5], [427, 105]], "back_bat_purple": [[428, 5], [429, 105]], "back_drag_red": [[430, 5], [431, 105]], "back_drag_green": [[432, 5], [433, 105]], "back_drag_black": [[434, 5], [435, 105]], "back_drag_gold": [[436, 5], [437, 105]], "back_pixie": [[438, 5], [439, 105]], "back_pixie_pink": [[440, 5], [441, 105]], "back_monarch": [[442, 5], [443, 105]], "back_dragonfly": [[444, 5], [445, 105]]}, "meta": {"back_base": ["망토 없음", "base", 0, "n"], "back_red": ["진홍 망토", "shop", 80, "n"], "back_navy": ["남색 망토", "shop", 80, "n"], "back_black": ["검은 망토", "shop", 100, "n"], "back_green": ["숲빛 망토", "shop", 100, "r"], "back_purple": ["보랏빛 망토", "shop", 140, "r"], "back_white": ["순백 망토", "shop", 160, "r"], "back_red_gold": ["금테 진홍 망토", "shop", 220, "e"], "back_navy_gold": ["금테 남색 망토", "rbox", 0, "e"], "back_white_silver": ["은테 순백 망토", "rbox", 0, "e"], "back_gold": ["황금 망토", "lbox", 0, "l"], "back_purple_gold": ["금테 보랏빛 망토", "boss", 0, "l"], "back_tat_black": ["찢긴 검은 망토", "rbox", 0, "r"], "back_tat_red": ["찢긴 핏빛 망토", "shop", 120, "r"], "back_tat_gray": ["유령의 망토", "rare", 0, "e"], "back_angel": ["천사의 날개", "rare", 0, "l"], "back_fallen": ["타락천사의 날개", "lbox", 0, "l"], "back_wgold": ["황금 깃털 날개", "boss", 0, "l"], "back_wblue": ["하늘빛 깃털 날개", "lbox", 0, "l"], "back_bat": ["박쥐 날개", "shop", 200, "e"], "back_bat_red": ["핏빛 박쥐 날개", "rbox", 0, "e"], "back_bat_purple": ["보랏빛 박쥐 날개", "rbox", 0, "e"], "back_drag_red": ["붉은 용의 날개", "lbox", 0, "l"], "back_drag_green": ["초록 용의 날개", "rbox", 0, "e"], "back_drag_black": ["흑룡의 날개", "boss", 0, "l"], "back_drag_gold": ["황금 용의 날개", "ach", 0, "l"], "back_pixie": ["요정 날개", "rbox", 0, "r"], "back_pixie_pink": ["분홍 요정 날개", "shop", 150, "r"], "back_monarch": ["나비 날개", "shop", 180, "e"], "back_dragonfly": ["잠자리 날개", "shop", 150, "r"]}, "rows": 446, "credits": [{"f": "neck/capeclip", "a": ["bluecarrot16", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "neck/capetie", "a": ["bluecarrot16", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "cape/solid/fg", "a": ["bluecarrot16", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "cape/solid/bg", "a": ["Nila122", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "cape/tattered/fg", "a": ["Nila122", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "cape/tattered/bg", "a": ["Nila122", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "cape/trim", "a": ["bluecarrot16", "JaidynReiman"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"}, {"f": "body/wings/feathered", "a": ["ElizaWy", "Stephen Challener (Redshrike)", "JaidynReiman"], "l": ["OGA-BY 3.0"], "u": "https://opengameart.org/content/lpc-wings-new-animations"}, {"f": "body/wings/bat", "a": ["ElizaWy", "JaidynReiman"], "l": ["OGA-BY 3.0"], "u": "https://opengameart.org/content/lpc-wings-new-animations"}, {"f": "body/wings/lizard", "a": ["JaidynReiman", "Nila122", "bluecarrot16"], "l": ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], "u": "https://opengameart.org/content/drakes-and-lizardfolk"}, {"f": "body/wings/pixie", "a": ["The Foreman"], "l": ["OGA-BY 4.0", "CC-BY-SA 4.0"], "u": "https://opengameart.org/content/lpc-fairy-wings"}, {"f": "body/wings/monarch", "a": ["The Foreman"], "l": ["OGA-BY 4.0", "CC-BY-SA 4.0"], "u": "https://opengameart.org/content/lpc-fairy-wings"}, {"f": "body/wings/dragonfly", "a": ["The Foreman"], "l": ["OGA-BY 4.0", "CC-BY-SA 4.0"], "u": "https://opengameart.org/content/lpc-fairy-wings-pack-2"}]};
+Object.keys(BACK.items).forEach(function(k){SPR.items[k]=BACK.items[k];var m=BACK.meta[k];SPR.meta[k]=m;ITEM[k]={id:k,slot:'back',n:m[0],src:m[1],price:m[2],r:m[3]}});
+SPR.rows=BACK.rows;BACK.credits.forEach(function(c){CREDITS.push(c)});
+GSLOTS.push('back');SLOTN.back='망토·날개';ACHI.p10000='back_drag_gold';
+var _itemThumb12=itemThumb;itemThumb=function(it){if(it.slot!=='back')return _itemThumb12(it);var eq={back:it.id};return avatar(S.look,eq,{s:1.45,style:'margin-left:'+(-32*1.45)+'px;margin-top:'+(-36*1.45)+'px'})};
+var _vCoordi12=vCoordi;vCoordi=function(){var h=_vCoordi12(),i=h.indexOf('data-a="slot" data-v="fx"');if(i<0)return h;var s=h.lastIndexOf('<button',i);
+  var its=Object.keys(ITEM).filter(function(k){return ITEM[k].slot==='back'}),own=its.filter(function(k){return S.own.indexOf(k)>=0}).length;
+  return h.slice(0,s)+'<button class="'+(sub2==='back'?'on':'')+'" data-a="slot" data-v="back">망토·날개 <span class="num" style="opacity:.75">'+own+'/'+its.length+'</span></button>'+h.slice(s)};
+
+/* ---------- 설정값 ---------- */
+function p12init(){
+  p7init();p8init();p9init();p11init();
+  if(!S.set)S.set={snd:true,bgm:35,sfx:60,bgmTimer:'calm',vib:true,fx:true,font:'m',autoQ:true,ntf:{on:false,study:'09:30',sleep:'00:30',pomo:50}};
+  if(!S.set.ntf)S.set.ntf={on:false,study:'09:30',sleep:'00:30',pomo:50};
+  if(!S.theory)S.theory=[];if(!S.plan)S.plan={};if(!S.planGot)S.planGot={};if(!S.es)S.es=[];if(!S.esDone)S.esDone=[];if(!S.ivDone)S.ivDone=[];
+  if(!S.ev)S.ev={d:'',done:'',start:{},long:{}};if(!S.dclr)S.dclr={d:'',got:[]};if(!S.dclrDays)S.dclrDays=[];if(!S.wclr)S.wclr={wk:'',got:[]};if(!S.nt)S.nt={};
+  questMigrate();schedMigrate();
+  if(S.ach&&S.ach.p10000&&S.own.indexOf('back_drag_gold')<0)S.own.push('back_drag_gold');
+}
+/* ---------- 퀘스트 개편 ---------- */
+var DQ=[['dq_fa','재무회계 30분 공부'],['dq_fm','재무관리 30분 공부'],['dq_bm','경영학 30분 공부'],['dq_ncs','NCS 30분 공부'],['dq_cert','자격증(신용분석사·투운사) 30분 공부'],['dq_th','이론 단원 1개 끝내기'],['dq_wr','자소서 문항 1개 쓰거나 고치기'],['dq_exp','경험 1개 정리하기 (STAR)'],['dq_news','경제·금융 기사 1개 읽고 한 줄 요약'],['dq_iv','면접 답변 1개 다듬기'],['dq_goal','하루 목표 공부 시간 채우기']];
+var WQ=[['wq_fa','재무회계 5시간 공부'],['wq_fm','재무관리 5시간 공부'],['wq_bm','경영학 5시간 공부'],['wq_ncs','NCS 5시간 공부'],['wq_cert','자격증 3시간 공부'],['wq_th','이론 단원 5개 끝내기'],['wq_es','자소서 문항 2개 완성'],['wq_iv','면접 질문 3개 완성'],['wq_ex','운동 3일 하기'],['wq_dc','일일 클리어 5일 달성'],['wq_news','경제·금융 기사 3건 정리'],['wq_exp','경험 3개 정리']];
+function questMigrate(){
+  if((S.qv||1)>=2)return;S.qv=2;
+  S.daily=S.daily.filter(function(q){return q.id!=='d1'});
+  var have={};S.daily.forEach(function(q){have[q.id]=1});
+  var add=DQ.filter(function(x){return !have[x[0]]}).map(function(x){return{id:x[0],t:x[1],d:'',gb:''}});
+  var fixed=S.daily.filter(function(q){return /^d[234]$/.test(q.id)}),custom=S.daily.filter(function(q){return !/^d[234]$/.test(q.id)&&!/^dq_/.test(q.id)});
+  S.daily=add.concat(fixed,custom);
+  var hw={};S.weekly.forEach(function(q){hw[q.id]=1});WQ.forEach(function(x){if(!hw[x[0]])S.weekly.push({id:x[0],t:x[1],w:'',gb:''})});
+}
+function subMin(t,keys){var r=S.days[t],m=0;if(!r)return 0;keys.forEach(function(k){m+=(r.min||{})[k]||0});return m}
+function weekDays(){var a=[],ws=WK();for(var i=0;i<7;i++)a.push(addDays(ws,i));return a}
+function wkSum(keys){return weekDays().reduce(function(s,d){return s+subMin(d,keys)},0)}
+function thOn(t,s){return S.theory.filter(function(x){return x.d===t&&(!s||x.s===s)}).length}
+function inWeek(d){return d>=WK()&&d<=addDays(WK(),6)}
+var DCOND={
+  dq_fa:function(t){return subMin(t,['fa','cs1'])>=30},dq_fm:function(t){return subMin(t,['fm'])>=30},dq_bm:function(t){return subMin(t,['bm'])>=30},dq_ncs:function(t){return subMin(t,['ncs'])>=30},
+  dq_cert:function(t){return subMin(t,['cs1','cs2','tuw'])>=30},dq_th:function(t){return thOn(t)>=1},dq_wr:function(t){return subMin(t,['wr'])>=20||S.es.some(function(e){return e.ed===t})},
+  dq_iv:function(t){return S.ivDone.indexOf(t)>=0||subMin(t,['iv'])>=10},dq_goal:function(t){return dayMin(t)>=S.goal.min},
+  d2:function(t){var r=S.days[t];return !!(r&&(r.sx||{}).ex)},d4:function(t){var l=S.life.days[t];return !!(l&&l.wakeOK)}
+};
+var WCOND={
+  w1:function(){return (S.scores||[]).some(function(r){return r.s==='ncs'&&inWeek(r.d)})},
+  w2:function(){var ks=['fm','fa','bm'].concat(pfActive()?['pf']:[]);return ks.every(function(k){return weekDays().some(function(d){var r=S.days[d];return r&&(r.sx||{})[k]})})},
+  w4:function(){return weekMin()>=1800},
+  wq_fa:function(){return wkSum(['fa','cs1'])>=300},wq_fm:function(){return wkSum(['fm'])>=300},wq_bm:function(){return wkSum(['bm'])>=300},wq_ncs:function(){return wkSum(['ncs'])>=300},
+  wq_cert:function(){return wkSum(['cs1','cs2','tuw'])>=180},wq_th:function(){return S.theory.filter(function(x){return inWeek(x.d)}).length>=5},
+  wq_es:function(){return S.esDone.filter(inWeek).length>=2},wq_iv:function(){return S.ivDone.filter(inWeek).length>=3},
+  wq_ex:function(){return weekDays().filter(function(d){var r=S.days[d];return r&&(r.sx||{}).ex}).length>=3},wq_dc:function(){return S.dclrDays.filter(inWeek).length>=5}
+};
+/* 이벤트 일일 퀘스트 */
+var EVQ=[
+  ['ev_long','타이머 한 번에 2시간 연속 공부',function(t){return (S.ev.long[t]||0)>=120}],
+  ['ev_early','오전 10시 전에 시작한 타이머로 25분 이상 공부',function(t){var h=S.ev.start[t];return h!=null&&h<10}],
+  ['ev_mock','모의고사 점수 1회 기록',function(t){return (S.scores||[]).some(function(r){return r.d===t})}],
+  ['ev_th3','이론 단원 3개 끝내기',function(t){return thOn(t)>=3}],
+  ['ev_4sub','하루에 4과목 이상 공부',function(t){var r=S.days[t];return !!r&&['fm','fa','bm','pf','ncs','cert'].filter(function(k){return (r.sx||{})[k]}).length>=4}],
+  ['ev_iv2','면접 질문 2개 완성',function(t){return S.ivDone.filter(function(d){return d===t}).length>=2}],
+  ['ev_es','자소서 문항 1개 완성',function(t){return S.esDone.indexOf(t)>=0}],
+  ['ev_wrong','오답 단원 3개 기록',function(t){return S.wrong.filter(function(w){return w.d===t&&!w.rv}).length>=3}],
+  ['ev_goal','하루 목표 시간 달성',function(t){return dayMin(t)>=S.goal.min}]
+];
+var EVW=['ev_wk5','주말 특별: 하루 5시간 공부',function(t){return dayMin(t)>=300}];
+function todayEv(){var t=T(),dw=new Date().getDay();if(dw===0||dw===6)return EVW;return EVQ[hashStr('ev'+t)%EVQ.length]}
+var _todayDaily12=todayDaily;todayDaily=function(){var l=_todayDaily12(),e=todayEv();l.unshift({id:e[0],t:'[이벤트] '+e[1],done:S.ev.done===T(),k:'ev'});return l};
+function clearNeed(l){return Math.min(5,l.length)}
+updQual=function(){var t=T(),l=todayDaily(),n=l.filter(function(q){return q.done}).length,ok=l.length&&n>=clearNeed(l),i=S.qual.indexOf(t);
+  if(ok&&i<0){S.qual.push(t);S.qual=S.qual.slice(-200);var s=streak();if(S.stk.start!==s.start){S.stk={start:s.start,got:[]}}
+    [[3,'rare'],[7,'rare'],[14,'legend']].forEach(function(x){if(s.n>=x[0]&&S.stk.got.indexOf(x[0])<0){S.stk.got.push(x[0]);S.boxes[x[1]]++;celebrate(x[0]+'일 연속!','', '연속 기록 보상',(x[1]==='rare'?'희귀':'전설')+' 상자 1개 획득','')}});}
+  else if(!ok&&i>=0)S.qual.splice(i,1);
+  checkAch()};
+function questAuto(){
+  var t=T(),wk=WK(),ch=false;
+  if(S.set.autoQ){
+    S.daily.forEach(function(q){var c=DCOND[q.id];if(c&&q.d!==t&&q.ad!==t&&c(t)){q.ad=t;q.d=t;giveQuestBox(q,t);feed('퀘스트 자동 완료: '+q.t,'w');sfx('check');ch=true}});
+    S.weekly.forEach(function(q){var c=WCOND[q.id];if(c&&q.w!==wk&&q.aw!==wk&&c()){q.aw=wk;q.w=wk;giveQuestBox(q,wk);feed('주간 퀘스트 자동 완료: '+q.t,'w');sfx('check');ch=true}});
+  }
+  var e=todayEv();if(S.ev.done!==t&&e[2](t)){S.ev.done=t;S.boxes.rare++;S.gold+=20;ch=true;celebrate('이벤트 클리어!','pur','「'+e[1]+'」','희귀 상자 1개 + 20G',tile('chest_r',64))}
+  if(ch)updQual();
+  var l=todayDaily(),n=l.filter(function(q){return q.done}).length;if(S.dclr.d!==t)S.dclr={d:t,got:[]};
+  if(n>=5&&S.dclr.got.indexOf(5)<0){S.dclr.got.push(5);S.boxes.rare++;S.gold+=30;if(S.dclrDays.indexOf(t)<0){S.dclrDays.push(t);S.dclrDays=S.dclrDays.slice(-60)}ch=true;celebrate('일일 클리어!','', '오늘 퀘스트 5개 완료','희귀 상자 1개 + 30G',tile('chest_r',64))}
+  if(n>=10&&S.dclr.got.indexOf(10)<0){S.dclr.got.push(10);S.boxes.rand+=2;S.gold+=50;ch=true;celebrate('일일 마스터!','blue','오늘 퀘스트 10개 완료','랜덤 상자 2개 + 50G',tile('chest_n',64))}
+  var wn=S.weekly.filter(function(q){return q.w===wk}).length;if(S.wclr.wk!==wk)S.wclr={wk:wk,got:[]};
+  if(wn>=5&&S.wclr.got.indexOf(5)<0){S.wclr.got.push(5);S.boxes.rare+=2;ch=true;celebrate('주간 클리어!','', '주간 퀘스트 5개 완료','희귀 상자 2개',tile('chest_r',64))}
+  if(wn>=10&&S.wclr.got.indexOf(10)<0){S.wclr.got.push(10);S.boxes.legend++;S.gold+=100;ch=true;celebrate('주간 마스터!','pur','주간 퀘스트 10개 완료','전설 상자 1개 + 100G',tile('chest_l',64))}
+  return ch;
+}
+var _Aq12=A.q;A.q=function(e,ev){if(e.dataset.k==='ev'){feed('이벤트 퀘스트는 조건을 채우면 자동으로 완료돼요','w');return}_Aq12(e,ev);sfx('check')};
+function clearBar(n,need,tiers){return '<div class="row" style="gap:6px;margin:6px 0 2px">'+tiers.map(function(x){var on=n>=x[0];return '<span class="badge '+(on?'g':'')+'">'+x[0]+'개 '+x[1]+(on?' 받음':'')+'</span>'}).join('')+'</div>'}
+var _vQuest12=vQuest;vQuest=function(){var h=_vQuest12(),t=T(),l=todayDaily(),n=l.filter(function(q){return q.done}).length,wn=S.weekly.filter(function(q){return q.w===WK()}).length;
+  h=h.replace(/<div class="dim" style="margin:6px 0 4px">[^<]*개 이상 끝내면 연속 기록이 이어져요\./,'<div class="dim" style="margin:6px 0 4px">5개 이상 끝내면 일일 클리어, 연속 기록도 이어져요.');
+  var di=h.indexOf('매일 자정에 다시 시작돼요.');if(di>=0){h=h.slice(0,di)+'매일 자정에 다시 시작돼요. 맨 위 [이벤트]는 매일 바뀌고, 조건을 채우면 자동 완료돼요. 공부 기록으로 확인되는 퀘스트도 자동으로 체크돼요.</p>'+clearBar(n,5,[[5,'희귀 상자+30G'],[10,'랜덤 상자 2+50G']])+h.slice(h.indexOf('</p>',di)+4)}
+  var wi=h.indexOf('매주 월요일에 다시 시작돼요.');if(wi>=0){h=h.slice(0,wi)+'매주 월요일에 다시 시작돼요. 지금 '+wn+' / '+S.weekly.length+'개 완료.</p>'+clearBar(wn,5,[[5,'희귀 상자 2'],[10,'전설 상자+100G']])+h.slice(h.indexOf('</p>',wi)+4)}
+  return insBefore(h,'<h2>일일 퀘스트',planWin())};
+
+/* ---------- 이론 단원 완료 ---------- */
+var THSUB=SUBJ.filter(function(s){return ['wr','iv'].indexOf(s[0])<0});
+A.thadd=function(){var k=val('ths'),u=val('thu');if(!u){feed('단원 이름을 넣어 주세요','w');sfx('err');return}var sb=SUB[k];S.theory.push({id:uid(),d:T(),s:k,u:u});S.theory=S.theory.slice(-800);var r=dayRec();r.th=(r.th||0)+1;
+  gainAct(sb.st,30,'act',sb.n+' 이론 「'+u+'」 완료');sfx('check');save();render()};
+function theoryWin(){var t=T(),today=S.theory.filter(function(x){return x.d===t}),units=[];S.theory.forEach(function(x){if(units.indexOf(x.u)<0)units.push(x.u)});
+  var o='<div class="form"><div class="field" style="width:120px"><label class="f">과목</label><select name="ths">'+THSUB.map(function(s){return '<option value="'+s[0]+'">'+s[1]+'</option>'}).join('')+'</select></div><div class="field grow"><label class="f">끝낸 단원</label><input name="thu" list="thl" placeholder="예: 자본예산"><datalist id="thl">'+units.slice(-40).map(function(u){return '<option value="'+esc(u)+'">'}).join('')+'</datalist></div><button class="btn" data-a="thadd">완료</button></div>';
+  o+='<div class="dim" style="margin-top:6px">오늘 '+today.length+'단원, 이번 주 '+S.theory.filter(function(x){return inWeek(x.d)}).length+'단원, 전체 '+S.theory.length+'단원</div>';
+  var rec=S.theory.slice(-5).reverse();if(rec.length)o+=rec.map(function(x){return '<div class="line"><span class="grow"><span class="t">'+esc(x.u)+'</span> <span class="dim">'+SUB[x.s].n+'</span></span><span class="dim num">'+md(x.d)+'</span></div>'}).join('');
+  return win('이론 단원 완료','이론서나 강의에서 단원 하나를 끝냈을 때 눌러요. 단원 1개에 30XP예요.',o,null,statIco('fm',26))}
+
+/* ---------- 공부 계획표 ---------- */
+var planDay=new Date().getDay(),DOW='일월화수목금토';
+function planToday(){return S.plan[new Date().getDay()]||{}}
+function planWin(){var p=S.plan[planDay]||{},tot=0;Object.keys(p).forEach(function(k){tot+=p[k]});
+  var o='<div class="tabsx wrapx" style="margin-top:0">'+[1,2,3,4,5,6,0].map(function(d){var pp=S.plan[d]||{},n=Object.keys(pp).length;return '<button class="'+(planDay===d?'on':'')+'" data-a="planday" data-v="'+d+'">'+DOW[d]+(n?' <span class="num" style="opacity:.75">'+n+'</span>':'')+'</button>'}).join('')+'</div>';
+  o+=SUBJ.map(function(s){var m=p[s[0]]||0;return '<div class="line">'+statIco(s[2][0],24)+'<span class="grow">'+s[1]+'</span><button class="btn ghost sm" data-a="planadj" data-v="'+s[0]+'" data-d="-30" aria-label="30분 줄이기">−</button><b class="num" style="width:64px;text-align:center">'+(m?hm(m):'-')+'</b><button class="btn ghost sm" data-a="planadj" data-v="'+s[0]+'" data-d="30" aria-label="30분 늘리기">+</button></div>'}).join('');
+  o+='<div class="row" style="margin-top:8px"><span class="sub grow">'+DOW[planDay]+'요일 합계 <b class="gold">'+hm(tot)+'</b></span><button class="btn ghost sm" data-a="plancopy">이 계획을 평일에 복사</button></div>';
+  return win('공부 계획표','요일마다 과목별 공부 시간을 정해 두세요. 오늘 계획은 캐릭터 화면에 진행률로 나오고, 모두 채우면 랜덤 상자를 받아요.',o)}
+A.planday=function(e){planDay=+e.dataset.v;render()};
+A.planadj=function(e){var p=S.plan[planDay]||(S.plan[planDay]={}),k=e.dataset.v,m=Math.max(0,Math.min(600,(p[k]||0)+(+e.dataset.d)));if(m)p[k]=m;else delete p[k];save();render()};
+A.plancopy=function(){var src=JSON.stringify(S.plan[planDay]||{});[1,2,3,4,5].forEach(function(d){S.plan[d]=JSON.parse(src)});feed('월~금 계획을 '+DOW[planDay]+'요일과 같게 맞췄어요','w');save();render()};
+function planCheck(){var p=planToday(),ks=Object.keys(p),t=T();if(!ks.length||S.planGot[t])return false;if(!ks.every(function(k){return subMin(t,[k])>=p[k]}))return false;
+  S.planGot[t]=1;var kk=Object.keys(S.planGot).sort();while(kk.length>60)delete S.planGot[kk.shift()];S.boxes.rand++;celebrate('계획 완수!','', '오늘 공부 계획을 모두 채웠어요','랜덤 상자 1개 획득',tile('chest_n',64));return true}
+function planHome(){var p=planToday(),ks=Object.keys(p),t=T();if(!ks.length)return '<div class="inset">'+tile('book',32)+'<div class="grow"><div class="k">오늘 공부 계획</div><div class="v sub">아직 없어요</div></div><button class="btn sm ghost" data-a="tab" data-v="quest">계획 짜기</button></div>';
+  return '<div class="inset" style="display:block"><div class="row" style="margin-bottom:4px">'+tile('book',32)+'<div class="grow"><div class="k">오늘 공부 계획</div><div class="v">'+ks.filter(function(k){return subMin(t,[k])>=p[k]}).length+' / '+ks.length+' 과목'+(S.planGot[t]?' <span class="gold">완수!</span>':'')+'</div></div></div>'+
+    ks.map(function(k){var m=subMin(t,[k]);return '<div class="row" style="gap:6px;margin-top:4px"><span style="width:70px;font-size:12.5px">'+SUB[k].n+'</span><div class="grow">'+bar('sm',m/p[k]*100)+'</div><span class="dim num" style="width:86px;text-align:right">'+Math.min(m,p[k])+'/'+p[k]+'분</span></div>'}).join('')+'</div>'}
+
+/* ---------- 자소서 문항 관리 ---------- */
+var esEdit=null,esOrg='all',EU={c:'글자 (공백 포함)',cn:'글자 (공백 제외)',b2:'byte (한글 2)',b3:'byte (한글 3)'};
+function esCount(s,u){s=s||'';if(u==='cn')return Array.from(s.replace(/\s/g,'')).length;if(u==='b2'){var n=0;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);n+=c===10?2:c>127?2:1}return n}if(u==='b3')return new Blob([s]).size;return Array.from(s).length}
+function esWin(){
+  var orgs=[];S.es.forEach(function(e){if(orgs.indexOf(e.org)<0)orgs.push(e.org)});var list=S.es.filter(function(e){return esOrg==='all'||e.org===esOrg});
+  var ST3=[['미작성',''],['작성 중','y'],['완성','g']],o='';
+  if(esEdit&&find(S.es,esEdit)){var e=find(S.es,esEdit),n=esCount(e.txt,e.u);
+    o+='<div class="detail" style="margin-top:0"><div class="dim">'+esc(e.org)+'</div><div class="t" style="font-weight:700;margin:2px 0 8px">'+esc(e.q)+'</div><textarea name="es_txt" data-id="'+e.id+'" style="min-height:220px">'+esc(e.txt||'')+'</textarea><div class="row" style="margin-top:6px"><span class="grow sub" id="es_cnt">'+esCntTxt(e,n)+'</span></div>'+
+      '<div class="row wrap" style="margin-top:8px"><button class="btn sm" data-a="essave">저장</button>'+(e.st===2?'<button class="btn ghost sm" data-a="esst" data-v="1">다시 작성 중으로</button>':'<button class="btn green sm" data-a="esst" data-v="2">완성 표시</button>')+'<button class="btn ghost sm" data-a="esclose">닫기</button><span class="grow"></span><button class="del" data-a="esdel">삭제</button></div></div>';
+    return win('자소서 문항','쓰는 동안 글자 수가 바로 세어져요. 「저장」을 누르거나 다른 화면으로 가기 전에 자동 저장돼요.',o,null,statIco('wr',26))}
+  if(orgs.length)o+='<div class="tabsx wrapx" style="margin-top:0"><button class="'+(esOrg==='all'?'on':'')+'" data-a="esorg" data-v="all">전체</button>'+orgs.map(function(g){return '<button class="'+(esOrg===g?'on':'')+'" data-a="esorg" data-v="'+esc(g)+'">'+esc(g)+'</button>'}).join('')+'</div>';
+  o+=list.length?list.map(function(e){var n=esCount(e.txt,e.u),s=ST3[e.st||0];return '<div class="line" data-a="esopen" data-v="'+e.id+'" style="cursor:pointer"><span class="grow"><span class="t">'+esc(e.q)+'</span><br><span class="s">'+esc(e.org)+' · '+n.toLocaleString()+(e.lim?' / '+e.lim.toLocaleString():'')+' '+EU[e.u].split(' ')[0]+'</span></span><span class="badge '+s[1]+'">'+s[0]+'</span></div>'}).join(''):'<div class="sub">아직 문항이 없어요. 지원할 기관의 자소서 문항을 아래에 추가하세요.</div>';
+  o+='<details class="more" style="margin-top:12px"><summary>문항 추가</summary><div class="field" style="margin-top:8px"><label class="f">기관</label><input name="es_o" placeholder="예: 캠코"'+(esOrg!=='all'?' value="'+esc(esOrg)+'"':'')+'></div><div class="field" style="margin-top:8px"><label class="f">문항</label><input name="es_q" placeholder="예: 지원 동기와 입사 후 포부"></div><div class="grid2" style="margin-top:8px"><div class="field"><label class="f">글자 수 한도</label><input name="es_l" type="number" inputmode="numeric" placeholder="예: 1000"></div><div class="field"><label class="f">세는 방법</label><select name="es_u">'+Object.keys(EU).map(function(k){return '<option value="'+k+'">'+EU[k]+'</option>'}).join('')+'</select></div></div><button class="btn ghost sm wide" style="margin-top:8px" data-a="esadd">문항 추가</button></details>';
+  return win('자소서 문항','기관별 자소서 문항을 모아 두고 글자 수를 세며 써요. 처음 완성하면 자소서력 30XP를 받아요.',o,S.es.filter(function(e){return e.st===2}).length+' / '+S.es.length+' 완성',statIco('wr',26))}
+function esCntTxt(e,n){var over=e.lim&&n>e.lim;return '<b class="num'+(over?'" style="color:var(--red)':' gold')+'">'+n.toLocaleString()+'</b>'+(e.lim?' / '+e.lim.toLocaleString():'')+' '+EU[e.u]+(over?' · '+(n-e.lim)+' 초과':e.lim?' · '+(e.lim-n)+' 남음':'')}
+function esSync(){if(!S.es)return;var ta=document.querySelector('[name="es_txt"]');if(!ta)return;var e=find(S.es,ta.dataset.id);if(e&&e.txt!==ta.value){e.txt=ta.value;e.ed=T();if(!e.st)e.st=1}}
+var esT=null;document.addEventListener('input',function(ev){if(!ev.target||ev.target.name!=='es_txt'||!S.es)return;var e=find(S.es,ev.target.dataset.id);if(!e)return;e.txt=ev.target.value;e.ed=T();if(!e.st)e.st=1;var c=document.getElementById('es_cnt');if(c)c.innerHTML=esCntTxt(e,esCount(e.txt,e.u));clearTimeout(esT);esT=setTimeout(save,800)});
+A.esadd=function(){var o=val('es_o'),q=val('es_q');if(!o||!q){feed('기관과 문항을 넣어 주세요','w');sfx('err');return}var e={id:uid(),org:o,q:q,lim:num('es_l'),u:val('es_u')||'c',txt:'',st:0,xp:0};S.es.push(e);esEdit=e.id;save();render()};
+A.esopen=function(e){esSync();esEdit=e.dataset.v;render()};
+A.esclose=function(){esSync();esEdit=null;save();render()};
+A.essave=function(){esSync();feed('저장했어요','w');save();render()};
+A.esst=function(e){esSync();var x=find(S.es,esEdit);if(!x)return;if(+e.dataset.v===2&&!esCount(x.txt,'cn')){feed('내용을 쓴 뒤에 완성할 수 있어요','w');sfx('err');return}x.st=+e.dataset.v;if(x.st===2){if(!x.xp){x.xp=1;S.esDone.push(T());S.esDone=S.esDone.slice(-200);gainAct(['wr'],30,'act','자소서 문항 완성: '+x.org)}sfx('check')}save();render()};
+A.esdel=function(){S.es=S.es.filter(function(x){return x.id!==esEdit});esEdit=null;save();render()};
+A.esorg=function(e){esOrg=e.dataset.v;render()};
+/* 면접 질문 완성 날짜 기록 */
+var _ivst12=A.ivst;A.ivst=function(e){var q=find(S.ivq,e.dataset.v),was=q&&q.st,had=q&&q.xp;_ivst12(e);if(q&&was===1&&q.st===2&&!had){S.ivDone.push(T());S.ivDone=S.ivDone.slice(-300)}};
+
+/* ---------- 보스: 인턴·공채 ---------- */
+function bossHP2(b){var h=bossHP(b.stage,b.grade,b.date);return b.rec==='인턴'?Math.max(1,Math.round(h/2)):h}
+var _bwx12=bossWinXP;bossWinXP=function(b){var x=_bwx12(b);return b.rec==='인턴'?Math.round(x/2):x};
+A.badd=function(){var o=val('bo');if(!o){feed('기관명을 입력하세요','w');sfx('err');return}var st=val('bs'),g=val('bg'),dt=val('bdt'),rec=val('brec')||'공채';
+  var w=[].slice.call(document.querySelectorAll('[name="bw"]:checked')).map(function(x){return x.value});if(!w.length)w=STAGES[st].weak.slice();
+  if((st==='필기'||st==='시험')&&!dt){feed('필기·자격시험은 날짜가 필요해요','w');sfx('err');return}
+  var b={id:uid(),org:o,stage:st,grade:g,screen:st==='서류'?val('bsc'):'',date:dt,weak:w,hp:0,dmg:0,res:null,created:T(),rec:st==='시험'?'':rec};b.hp=bossHP2(b);
+  S.bosses.push(b);checkAch();celebrate('BOSS!','', esc(o)+' '+st+(b.rec==='인턴'?' (인턴)':''),STAGES[st].m+' 등장 · HP '+b.hp.toLocaleString(),monBig(st,g,0,b));save();render()};
+A.bdate=function(e){var b=find(S.bosses,e.dataset.v),dt=e.parentNode.parentNode.querySelector('[name="bd"]')||e.parentNode.querySelector('[name="bd"]');dt=dt&&dt.value;if(!b||!dt)return;b.date=dt;b.hp=bossHP2(b);save();render()};
+var _schsave12=A.schsave;A.schsave=function(e){_schsave12(e);var x=find(S.sched,e.dataset.v),b=x&&schBoss(x);if(b&&!b.res&&b.rec==='인턴'){b.hp=bossHP2(b);b.dmg=Math.min(b.dmg,b.hp);save();render()}};
+A.summon=function(e){var x=find(S.sched,e.dataset.v);if(!x||schBoss(x))return;var intern=x.kind==='인턴',dt=intern?x.close:x.exam;
+  if(!dt||dLeft(dt)<1){feed('날짜가 없거나 이미 지났어요. 날짜를 먼저 고쳐 주세요','w');sfx('err');return}
+  var st=intern?'서류':'필기',b={id:uid(),org:x.org,stage:st,grade:x.grade,screen:intern?'경쟁':'',date:dt,weak:STAGES[st].weak.slice(),hp:0,dmg:0,res:null,created:T(),sched:x.id,rec:intern?'인턴':'공채'};b.hp=bossHP2(b);
+  S.bosses.push(b);x.boss=b.id;checkAch();celebrate('BOSS!','', esc(x.org)+' '+st+(intern?' (인턴)':''),STAGES[st].m+' 등장, HP '+b.hp.toLocaleString(),monBig(st,x.grade,0,b));save();render()};
+var _bres12=bossResult;bossResult=function(bid,res){var b=find(S.bosses,bid),n0=S.bosses.length;_bres12(bid,res);if(b)S.bosses.slice(n0).forEach(function(nb){if(nb.org===b.org&&nb.rec==null)nb.rec=b.rec})};
+/* ---------- 공고 일정 확대 (2026 실제 → 2027 예상) ---------- */
+var SCHED2=[
+ /* org, grade, kind, half, close27, exam27, close26, exam26, note */
+ ['캠코','S','공채','상반기','2027-04-16','2027-05-08','2026-04-17','2026-05-09','2026년 공고 접수 4/3~4/17, 필기 5/9'],
+ ['기술보증기금','A','공채','연중','2027-06-29','2027-07-31','2026-06-30','2026-08-01','2026년 접수 6/12~6/30, 필기 8/1'],
+ ['한국주택금융공사','A','공채','하반기','2027-08-19','2027-09-18','2026-08-20','2026-09-19','2026년 접수 7/31~8/20, 필기 9/19'],
+ ['예금보험공사','A','공채','하반기','2027-09-10','2027-10-16','2026-09-11','2026-10-17','2026년 접수 8/28~9/11, 필기 10/17'],
+ ['신용보증기금','A','공채','하반기','2027-09-15','2027-10-16','2026-09-16','2026-10-17','2026년 하반기 접수 9/2~9/16, 필기 10/17'],
+ ['IBK기업은행','B','공채','하반기','','2027-10-16','','2026-10-17','2026년 하반기 필기 10/17 (본인 응시 기록)'],
+ ['한국수출입은행','B','공채','하반기','','2027-10-23','','2026-10-24','2026년 하반기 1차 필기 10/24 (본인 응시 기록)'],
+ ['한국주택금융공사','A','인턴','상반기','2027-01-15','','2026-01-16','','2026년 상반기 체험형 인턴 접수 2025/12/31~2026/1/16'],
+ ['IBK기업은행','B','인턴','상반기','2027-05-12','','2026-05-13','','2026년 하계 체험형 청년인턴 접수 4/23~5/13'],
+ ['신용보증기금','A','인턴','하반기','2027-07-22','','2026-07-23','','2026년 하반기 체험형 청년인턴 접수 7/9~7/23'],
+ ['캠코','S','인턴','상반기','','','','','2026년 체험형 인턴(1차)은 4월 접수 (서류 발표 4/29). 공고가 뜨면 날짜를 넣으세요'],
+ ['캠코','S','인턴','하반기','2027-10-15','','2026-10-16','','2026년 체험형 인턴(2차) 접수 10/2~10/16']
+];
+function schedMigrate(){if((S.schv||1)>=2)return;S.schv=2;
+  S.sched.forEach(function(x){if(!x.kind)x.kind='공채'});
+  SCHED2.forEach(function(r,i){var ex=S.sched.filter(function(x){return x.org===r[0]&&x.kind===r[2]&&(x.half===r[3]||(r[0]==='캠코'&&r[2]==='공채'))})[0];
+    if(ex){if(ex.est){ex.close=r[4];ex.exam=r[5];ex.half=r[3];var eb=schBoss(ex),nd=ex.kind==='인턴'?ex.close:ex.exam;if(eb&&!eb.res&&nd&&eb.date!==nd){eb.date=nd;eb.hp=bossHP2(eb);eb.dmg=Math.min(eb.dmg,eb.hp)}}ex.y26c=r[6];ex.y26=r[7];ex.note=r[8];return}
+    S.sched.push({id:'sc2_'+i,org:r[0],grade:r[1],kind:r[2],half:r[3],close:r[4],exam:r[5],y26c:r[6],y26:r[7],note:r[8],est:true,boss:''})})}
+function kd(x){return x.exam||x.close||''}
+nextSched=function(){return S.sched.filter(function(x){return x.exam&&dLeft(x.exam)>=0}).sort(function(a,b){return a.exam.localeCompare(b.exam)})[0]||null};
+var schKind='all';
+schedWin=function(){
+  var list=S.sched.filter(function(x){return schKind==='all'||x.kind===schKind}).sort(function(a,b){return (kd(a)||'9999').localeCompare(kd(b)||'9999')}),o='';
+  o+='<div class="tabsx wrapx" style="margin-top:0">'+[['all','전체'],['공채','신입 공채'],['인턴','인턴']].map(function(k){return '<button class="'+(schKind===k[0]?'on':'')+'" data-a="schkind" data-v="'+k[0]+'">'+k[1]+' <span class="num" style="opacity:.75">'+S.sched.filter(function(x){return k[0]==='all'||x.kind===k[0]}).length+'</span></button>'}).join('')+'</div>';
+  list.forEach(function(x){
+    var key=kd(x),past=key&&dLeft(key)<0,b=schBoss(x),gb={S:'y',A:'g',B:''}[x.grade]||'',intern=x.kind==='인턴';
+    o+='<div class="sch'+(past?' past':'')+'"><div class="row"><b class="grow" style="font-size:15px">'+esc(x.org)+'</b><span class="badge '+(intern?'':'y')+'">'+(intern?'인턴':'공채')+'</span><span class="badge '+gb+'">'+x.grade+'</span>'+(x.est?'<span class="badge">예상</span>':'<span class="badge g">확정</span>')+'</div>'+
+      '<div class="schd"><span class="dim">서류 마감</span> <b class="num">'+md(x.close)+'</b> <span class="gold num">'+ddTxt(x.close)+'</span>'+(intern?'':'<span class="dim" style="margin-left:10px">필기</span> <b class="num">'+md(x.exam)+'</b> <span class="gold num">'+ddTxt(x.exam)+'</span>')+'</div>'+
+      '<div class="dim" style="margin-top:2px">'+(x.y26||x.y26c?'작년(2026) 실제: '+(x.y26c?'마감 '+md(x.y26c):'')+(x.y26?(x.y26c?', ':'')+'필기 '+md(x.y26):'')+(x.est&&key?' → 올해는 같은 주 요일로 추정':''):(x.note?'':'작년 일정: 미확인 — 직접 확인 필요'))+(x.note?'<br>'+esc(x.note):'')+'</div>';
+    if(schEdit===x.id){
+      o+='<div class="grid2" style="margin-top:8px"><div class="field"><label class="f">서류 마감일</label><input type="date" name="sc_c" value="'+(x.close||'')+'"></div>'+(intern?'<input type="hidden" name="sc_e" value="">':'<div class="field"><label class="f">필기일</label><input type="date" name="sc_e" value="'+(x.exam||'')+'"></div>')+'</div>'+
+        '<div class="field" style="margin-top:8px"><label class="f">등급</label><select name="sc_g"><option value="S"'+(x.grade==='S'?' selected':'')+'>S (1지망)</option><option value="A"'+(x.grade==='A'?' selected':'')+'>A (희망)</option><option value="B"'+(x.grade==='B'?' selected':'')+'>B (연습)</option></select></div>'+
+        '<div class="row" style="margin-top:8px"><button class="btn sm grow" data-a="schsave2" data-v="'+x.id+'">공고 날짜로 확정</button><button class="btn ghost sm" data-a="schedit" data-v="">취소</button><button class="del" data-a="schdel" data-v="'+x.id+'">삭제</button></div>';
+    }else{
+      o+='<div class="row" style="margin-top:6px">'+(b?(b.res?'<span class="badge">보스전 끝</span>':'<span class="badge g">보스 소환됨</span>'):(past||!key?'':'<button class="btn sm" data-a="summon" data-v="'+x.id+'">'+(intern?'서류 보스 소환':'필기 보스 소환')+'</button>'))+'<span class="grow"></span><button class="btn ghost sm" data-a="schedit" data-v="'+x.id+'">날짜 수정</button></div>';
+    }
+    o+='</div>';
+  });
+  o+='<details class="more" style="margin-top:12px"><summary>기관 추가</summary><div class="field" style="margin-top:8px"><label class="f">기관명</label><input name="sn_o" placeholder="예: 서울보증보험"></div><div class="grid2" style="margin-top:8px"><div class="field"><label class="f">구분</label><select name="sn_k"><option value="공채">신입 공채</option><option value="인턴">인턴</option></select></div><div class="field"><label class="f">등급</label><select name="sn_g"><option value="S">S (1지망)</option><option value="A" selected>A (희망)</option><option value="B">B (연습)</option></select></div><div class="field"><label class="f">서류 마감일</label><input type="date" name="sn_c"></div><div class="field"><label class="f">필기일 (인턴은 비워도 돼요)</label><input type="date" name="sn_e"></div></div><button class="btn ghost sm wide" style="margin-top:10px" data-a="schadd">일정 추가</button></details>';
+  return win('공고 일정','「예상」은 작년(2026) 실제 공고 날짜를 올해 같은 주 요일로 옮긴 날이에요. 작년 날짜를 못 찾은 곳은 「미확인」으로 표시했어요. 공고가 뜨면 「날짜 수정」으로 확정하세요. 인턴 보스는 HP와 보상이 공채의 절반이에요.',o,S.sched.length+'곳');
+};
+A.schkind=function(e){schKind=e.dataset.v;render()};
+A.schsave2=function(e){var x=find(S.sched,e.dataset.v);if(!x)return;var c=val('sc_c'),ex=val('sc_e');if(x.kind!=='인턴'&&!ex){feed('필기일을 넣어 주세요','w');sfx('err');return}if(x.kind==='인턴'&&!c){feed('서류 마감일을 넣어 주세요','w');sfx('err');return}
+  x.close=c;x.exam=ex;x.grade=val('sc_g')||x.grade;x.est=false;var b=schBoss(x),nd=x.kind==='인턴'?c:ex;if(b&&!b.res&&b.date!==nd){b.date=nd;b.hp=bossHP2(b);b.dmg=Math.min(b.dmg,b.hp)}
+  schEdit=null;feed(x.org+' 일정을 확정했어요','w');save();render()};
+A.schadd=function(){var o=val('sn_o'),k=val('sn_k')||'공채',ex=val('sn_e'),c=val('sn_c');if(!o||(k==='공채'&&!ex)||(k==='인턴'&&!c)){feed(k==='공채'?'기관명과 필기일을 넣어 주세요':'기관명과 서류 마감일을 넣어 주세요','w');sfx('err');return}
+  S.sched.push({id:uid(),org:o,grade:val('sn_g')||'A',kind:k,half:'',close:c,exam:k==='인턴'?'':ex,est:false,boss:''});feed(o+' 일정을 추가했어요','w');save();render()};
+var _vBoss12=vBoss;vBoss=function(){var h=_vBoss12();
+  h=h.replace('<label class="f" style="margin-top:10px">약점 과목','<div class="field" style="margin-top:8px"><label class="f">모집 구분</label><select name="brec"><option value="공채">신입 공채</option><option value="인턴">인턴 (HP·보상 절반)</option></select></div><label class="f" style="margin-top:10px">약점 과목');
+  S.bosses.forEach(function(b){if(!b.rec||b.res)return;var i=h.indexOf('data-v="'+b.id+'"');if(i<0)return;var s0=h.lastIndexOf('<section class="boss',i);if(s0<0)return;var key='>'+esc(b.org)+' '+b.stage+'</b>',k=h.indexOf(key,s0);if(k<0||k>i)return;h=h.slice(0,k)+'>'+esc(b.org)+' '+b.stage+' <span class="badge'+(b.rec==='인턴'?'':' y')+'">'+b.rec+'</span></b>'+h.slice(k+key.length)});
+  return h};
+
+/* ---------- 사운드 ---------- */
+var AU={ctx:null,m:null,bg:null,fx:null,scene:null,step:0,next:0,iv:null};
+function auInit(){if(AU.ctx)return true;var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;try{AU.ctx=new C()}catch(e){return false}
+  AU.m=AU.ctx.createGain();AU.m.connect(AU.ctx.destination);AU.bg=AU.ctx.createGain();AU.bg.connect(AU.m);AU.fx=AU.ctx.createGain();AU.fx.connect(AU.m);auVol();return true}
+function auVol(){if(!AU.ctx)return;AU.m.gain.value=S.set.snd?1:0;AU.bg.gain.value=Math.pow(S.set.bgm/100,1.6)*.32;AU.fx.gain.value=Math.pow(S.set.sfx/100,1.4)*.5}
+function mf(n){return 440*Math.pow(2,(n-69)/12)}
+function tone(f,t0,dur,type,vol,dest,f2){var c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(0.0001,t0);g.gain.linearRampToValueAtTime(vol,t0+.008);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);o.connect(g);g.connect(dest);o.start(t0);o.stop(t0+dur+.02)}
+function noise(t0,dur,vol){var c=AU.ctx,b=c.createBuffer(1,Math.floor(c.sampleRate*dur),c.sampleRate),d=b.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;var s=c.createBufferSource(),g=c.createGain(),f=c.createBiquadFilter();f.type='highpass';f.frequency.value=4000;s.buffer=b;g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);s.connect(f);f.connect(g);g.connect(AU.bg);s.start(t0)}
+var SFX={
+  click:function(t){tone(1046,t,.04,'square',.12,AU.fx)},
+  coin:function(t){tone(988,t,.07,'square',.18,AU.fx);tone(1319,t+.06,.16,'square',.18,AU.fx)},
+  check:function(t){tone(784,t,.07,'triangle',.3,AU.fx);tone(1175,t+.07,.14,'triangle',.3,AU.fx)},
+  err:function(t){tone(196,t,.12,'square',.18,AU.fx);tone(147,t+.1,.16,'square',.18,AU.fx)},
+  hit:function(t){tone(220,t,.25,'sawtooth',.3,AU.fx,55);tone(110,t+.02,.3,'square',.2,AU.fx,40)},
+  box:function(t){[60,64,67,72,76].forEach(function(n,i){tone(mf(n+12),t+i*.06,.12,'square',.14,AU.fx)})},
+  level:function(t){[72,76,79,84].forEach(function(n,i){tone(mf(n),t+i*.09,.18,'square',.2,AU.fx)});tone(mf(88),t+.4,.5,'triangle',.25,AU.fx);tone(mf(84),t+.4,.5,'square',.1,AU.fx)},
+  fan:function(t){[67,72,76].forEach(function(n,i){tone(mf(n),t+i*.08,.14,'square',.18,AU.fx)});tone(mf(79),t+.26,.36,'triangle',.25,AU.fx)},
+  sad:function(t){[67,63,60].forEach(function(n,i){tone(mf(n),t+i*.16,.26,'triangle',.25,AU.fx)})}
+};
+var lastSfx={};function sfx(k){if(!S.set||!S.set.snd||!auInit())return;var now=AU.ctx.currentTime;if(lastSfx[k]&&now-lastSfx[k]<.05)return;lastSfx[k]=now;try{SFX[k](now+.01)}catch(e){}}
+/* BGM: 8분음표 단위 스텝, 32스텝(4마디) 반복 */
+var R_=null,SONGS={
+  town:{bpm:104,lead:'square',lv:.13,mel:[72,R_,76,79,77,76,74,R_,72,R_,76,81,79,R_,76,R_,77,R_,81,79,77,76,74,72,74,R_,79,77,76,74,71,R_],bass:[48,45,41,43],arp:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]]},
+  boss:{bpm:138,lead:'square',lv:.11,mel:[69,R_,72,R_,76,R_,74,72,72,R_,69,R_,77,76,74,R_,74,R_,71,R_,74,R_,79,77,76,R_,75,R_,76,R_,R_,R_],bass:[45,41,43,40],arp:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],drum:1},
+  study:{bpm:72,lead:'triangle',lv:.12,mel:[76,R_,R_,79,R_,R_,74,R_,72,R_,R_,76,R_,R_,R_,R_,77,R_,R_,81,R_,R_,79,R_,76,R_,74,R_,72,R_,R_,R_],bass:[48,45,41,43],arp:[[64,67,71],[60,64,67],[57,60,64],[59,62,67]],soft:1},
+  shop:{bpm:116,lead:'triangle',lv:.14,mel:[79,77,76,R_,72,R_,74,76,77,R_,74,R_,71,R_,R_,R_,76,74,72,R_,69,R_,71,72,74,R_,79,R_,77,R_,R_,R_],bass:[48,50,43,48],arp:[[60,64,67],[62,65,69],[55,59,62],[60,64,67]]}
+};
+function sceneOf(){if(!S.set.snd||S.set.bgm<=0)return null;if(S.timer){if(S.set.bgmTimer==='off')return null;if(S.set.bgmTimer==='calm')return 'study'}return tab==='boss'?'boss':tab==='shop'?'shop':tab==='timer'?'study':'town'}
+function bgmTick(){if(!AU.ctx||document.hidden)return;var sc=sceneOf();if(sc!==AU.scene){AU.scene=sc;AU.step=0;AU.next=AU.ctx.currentTime+.08}if(!sc)return;var s=SONGS[sc],dt=60/s.bpm/2;if(AU.next<AU.ctx.currentTime)AU.next=AU.ctx.currentTime+.05;
+  while(AU.next<AU.ctx.currentTime+.2){var i=AU.step%32,bar=Math.floor(i/8),t=AU.next,n=s.mel[i];
+    if(n!=null)tone(mf(n),t,dt*(s.soft?2.6:1.6),s.lead,s.lv,AU.bg);
+    if(i%8===0||(!s.soft&&i%8===4))tone(mf(s.bass[bar]-(s.soft?0:12)),t,dt*(s.soft?7:3),'triangle',s.soft?.2:.26,AU.bg);
+    if(!s.soft&&i%2===1){var c=s.arp[bar];tone(mf(c[(i>>1)%3]+12),t,dt*.8,'square',.035,AU.bg)}
+    if(s.soft){var c2=s.arp[bar];tone(mf(c2[i%3]),t,dt*1.8,'sine',.06,AU.bg)}
+    if(s.drum&&i%2===0)noise(t,.05,i%4===0?.08:.04);
+    AU.step++;AU.next+=dt}}
+function auStart(){if(!S.set.snd||!auInit())return;if(AU.ctx.state==='suspended')AU.ctx.resume();if(!AU.iv)AU.iv=setInterval(bgmTick,60)}
+['pointerdown','keydown'].forEach(function(ev){window.addEventListener(ev,auStart,{capture:true,passive:true})});
+document.addEventListener('visibilitychange',function(){if(!AU.ctx)return;if(document.hidden)AU.ctx.suspend();else if(S.set.snd)AU.ctx.resume()});
+/* 효과음 연결 */
+window.addEventListener('click',function(ev){var e=ev.target.closest&&ev.target.closest('[data-a]');if(!e)return;var a=e.dataset.a;if(['q','openbox','skill','bres','ivst','esst','thadd','undo'].indexOf(a)>=0)return;sfx('click')},true);
+var _cel12=celebrate;celebrate=function(big,cls,l1,l2,extra){var b=String(big);sfx(/LEVEL|승급|전직|최종 합격|VICTORY/.test(b)?'level':/패배|탈락/.test(b)?'sad':/BOSS/.test(b)?'hit':'fan');
+  if(S.set&&!S.set.fx){vib([50,30,100]);overlay('<div class="cel">'+(extra?'<div class="vis">'+extra+'</div>':'')+'<div class="big '+(cls||'')+'">'+noEmo(big)+'</div><div class="l1">'+noEmo(l1||'')+'</div><div class="l2">'+noEmo(l2||'')+'</div><div class="x"><button class="btn sm">확인</button></div></div>');return}
+  _cel12(big,cls,l1,l2,extra)};
+var _addXP12=addXP,xpSndT=0;addXP=function(xp,stats,label){_addXP12(xp,stats,label);if(Date.now()-xpSndT>400){xpSndT=Date.now();sfx('coin')}};
+var _openBox12=openBox;openBox=function(k){if(S.boxes[k])sfx('box');_openBox12(k)};
+var _useSkill12=useSkill;useSkill=function(a,b,c){sfx('hit');_useSkill12(a,b,c)};
+vib=function(p){if(S.set&&!S.set.vib)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+
+/* ---------- 이벤트용 타이머 기록 ---------- */
+var _startT12=startTimer;startTimer=function(k){_startT12(k)};
+var _stopT12=stopTimer;stopTimer=function(){if(S.timer){var m=Math.floor(tElapsed()/60000),t=T();S.ev.long[t]=Math.max(S.ev.long[t]||0,m);if(m>=25&&S.ev.start[t]==null){S.ev.start[t]=new Date(S.timer.start).getHours();var ks2=Object.keys(S.ev.start).sort();while(ks2.length>30)delete S.ev.start[ks2.shift()]}var ks=Object.keys(S.ev.long).sort();while(ks.length>30)delete S.ev.long[ks.shift()]}_stopT12()};
+
+/* ---------- 알림 ---------- */
+function notify(title,body){feed(title+' · '+body,'b');sfx('fan');if(!S.set.ntf.on||!('Notification' in window)||Notification.permission!=='granted')return;
+  try{if(navigator.serviceWorker&&navigator.serviceWorker.controller){navigator.serviceWorker.ready.then(function(r){r.showNotification(title,{body:body,icon:'icon-192.png',tag:'jrpg-'+title})}).catch(function(){new Notification(title,{body:body,icon:'icon-192.png'})})}else new Notification(title,{body:body,icon:'icon-192.png'})}catch(e){}}
+function hmNow(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
+function minOf(s){var p=(s||'0:0').split(':');return +p[0]*60+(+p[1])}
+function ntfTick(){if(!S.set||!S.set.ntf)return;var n=S.set.ntf,t=T(),now=minOf(hmNow());
+  if(n.on&&n.study&&S.nt.study!==t){var st=minOf(n.study);if(now>=st&&now<st+120){S.nt.study=t;if(dayMin(t)===0&&!S.timer)notify('공부 시작할 시간이에요','오늘 아직 공부 기록이 없어요. 타이머를 켜고 던전에 들어가 볼까요?');save()}}
+  if(n.on&&n.sleep){var sl=minOf(n.sleep),nn=now<sl-720?now+1440:now,nk=nn>=1440?dayOff(-1):t;if(S.nt.sleep!==nk&&nn>=sl&&nn<sl+90&&!(S.life.sleepAt&&Date.now()-S.life.sleepAt<6*3600e3)){S.nt.sleep=nk;notify('잘 시간이에요','「취침 기록」을 누르고 자면 내일 생활 보너스를 받을 수 있어요');save()}}
+  if(S.timer&&n.pomo){var el=Math.floor(tElapsed()/60000),k=Math.floor(el/n.pomo);if(k>=1&&(S.timer.pk||0)<k){S.timer.pk=k;notify(el+'분째 집중 중','잠깐 일어나서 5분 쉬고 와요. 타이머는 계속 흘러가요');save()}}}
+setInterval(ntfTick,30000);
+A.ntfon=function(){if(!('Notification' in window)){feed('이 브라우저는 알림을 지원하지 않아요','w');sfx('err');return}
+  if(S.set.ntf.on){S.set.ntf.on=false;save();render();return}
+  var done=false,cb=function(p){if(done)return;done=true;if(p==='granted'){S.set.ntf.on=true;notify('알림을 켰어요','정해 둔 시각에 알려 드릴게요')}else feed('알림 권한이 거부됐어요. 폰 설정에서 이 앱의 알림을 허용해 주세요','w');save();render()};var pr=Notification.requestPermission(cb);if(pr&&pr.then)pr.then(cb)};
+
+/* ---------- 과목별 통계 ---------- */
+var SUBC={fm:'#e0913a',fa:'#4a90e2',bm:'#3fbf7f',pf:'#9a7be0',ncs:'#e0c03a',cs1:'#e05a5a',cs2:'#f08a8a',tuw:'#c95a9a',wr:'#3fc1b8',iv:'#b07ad0'},statRange='week';
+function rangeDays(){var a=[];if(statRange==='week')return weekDays().filter(function(d){return d<=T()});if(statRange==='month'){var d=new Date(MO()+'-01T00:00:00');while(fmt(d)<=T()&&fmt(d).slice(0,7)===MO()){a.push(fmt(d));d.setDate(d.getDate()+1)}return a}for(var i=27;i>=0;i--)a.push(dayOff(-i));return a}
+function statWin(){
+  var ds=rangeDays(),sum={},tot=0;ds.forEach(function(d){SUBJ.forEach(function(s){var m=subMin(d,[s[0]]);if(m){sum[s[0]]=(sum[s[0]]||0)+m;tot+=m}})});
+  var mx=Math.max.apply(null,[1].concat(Object.keys(sum).map(function(k){return sum[k]})));
+  var o='<div class="tabsx wrapx" style="margin-top:0">'+[['week','이번 주'],['month','이번 달'],['d28','최근 4주']].map(function(r){return '<button class="'+(statRange===r[0]?'on':'')+'" data-a="statr" data-v="'+r[0]+'">'+r[1]+'</button>'}).join('')+'</div>';
+  o+='<div class="row" style="margin:4px 0 8px"><span class="sub grow">합계 <b class="gold num">'+hm(tot)+'</b></span><span class="dim">공부한 날 '+ds.filter(function(d){return dayMin(d)>0}).length+' / '+ds.length+'일</span></div>';
+  o+=SUBJ.filter(function(s){return sum[s[0]]}).sort(function(a,b){return sum[b[0]]-sum[a[0]]}).map(function(s){var m=sum[s[0]];return '<div class="row" style="gap:6px;margin-top:6px"><span style="width:74px;font-size:12.5px"><span class="dot" style="background:'+SUBC[s[0]]+'"></span>'+s[1]+'</span><div class="grow"><div class="bar sm" style="--c:'+SUBC[s[0]]+'"><i style="width:calc('+(m/mx*100).toFixed(1)+'% - 4px)"></i></div></div><span class="dim num" style="width:92px;text-align:right">'+hm(m)+' '+Math.round(m/tot*100)+'%</span></div>'}).join('')||'<div class="sub">이 기간 공부 기록이 없어요.</div>';
+  var last=[];for(var i=6;i>=0;i--)last.push(dayOff(-i));var W=320,H=150,L=28,B=20,bw=(W-L-8)/7,cmx=Math.max(60,Math.max.apply(null,last.map(dayMin)));cmx=Math.ceil(cmx/60)*60;
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="최근 7일 과목별 공부 시간">';
+  [0,.5,1].forEach(function(p){var y=8+(1-p)*(H-8-B);g+='<line x1="'+L+'" x2="'+(W-4)+'" y1="'+y+'" y2="'+y+'" stroke="#3b4874"/><text x="'+(L-4)+'" y="'+(y+4)+'" text-anchor="end" fill="#9aa6c8" font-size="9">'+Math.round(cmx*p/60)+'h</text>'});
+  last.forEach(function(d,i){var y=H-B,x=L+i*bw+4;SUBJ.forEach(function(s){var m=subMin(d,[s[0]]);if(!m)return;var hh=m/cmx*(H-8-B);y-=hh;g+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+(bw-8).toFixed(1)+'" height="'+hh.toFixed(1)+'" fill="'+SUBC[s[0]]+'"><title>'+md(d)+' '+s[1]+' '+hm(m)+'</title></rect>'});
+    g+='<text x="'+(x+(bw-8)/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" fill="'+(d===T()?'#ffcf4d':'#9aa6c8')+'" font-size="9">'+DOW[new Date(d+'T00:00:00').getDay()]+'</text>'});
+  g+='</svg>';
+  return win('과목별 공부 시간','기간별로 어떤 과목에 시간을 썼는지 보여줘요. 아래 그래프는 최근 7일 하루별 과목 비중이에요.',o+g)}
+A.statr=function(e){statRange=e.dataset.v;render()};
+
+/* ---------- 설정 탭 ---------- */
+TABS.push(['set','orb','설정']);
+function tog(k,on,lab,desc){return '<div class="line"><span class="grow"><span class="t">'+lab+'</span>'+(desc?'<br><span class="s">'+desc+'</span>':'')+'</span><button class="btn sm '+(on?'green':'ghost')+'" data-a="settog" data-k="'+k+'" aria-pressed="'+on+'">'+(on?'켜짐':'꺼짐')+'</button></div>'}
+function seg(k,cur,opts){return '<div class="row wrap" style="gap:6px;margin-top:6px">'+opts.map(function(o){return '<button class="pill'+(cur===o[0]?' on':'')+'" data-a="setseg" data-k="'+k+'" data-v="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div>'}
+function vSet(){var s=S.set,n=s.ntf,h=head('설정','소리, 화면, 게임 규칙, 알림, 백업을 여기서 바꿔요.');
+  h+=win('사운드','BGM과 효과음은 이 앱이 직접 만들어 내는 8비트 소리예요. 처음 화면을 누른 뒤부터 나와요.',
+    tog('snd',s.snd,'소리 전체')+'<div class="field" style="margin-top:10px"><label class="f">BGM 볼륨 <b class="num" id="v_bgm">'+s.bgm+'</b></label><input type="range" min="0" max="100" step="5" value="'+s.bgm+'" data-set="bgm" style="width:100%"></div><div class="field" style="margin-top:10px"><label class="f">효과음 볼륨 <b class="num" id="v_sfx">'+s.sfx+'</b></label><input type="range" min="0" max="100" step="5" value="'+s.sfx+'" data-set="sfx" style="width:100%"></div>'+
+    '<label class="f" style="margin-top:12px">타이머로 공부하는 동안 BGM</label>'+seg('bgmTimer',s.bgmTimer,[['calm','잔잔한 곡'],['same','평소 곡'],['off','끄기']])+
+    '<div class="row wrap" style="gap:6px;margin-top:12px"><span class="dim">미리 듣기</span><button class="btn ghost sm" data-a="sndtest" data-v="level">레벨업</button><button class="btn ghost sm" data-a="sndtest" data-v="box">상자</button><button class="btn ghost sm" data-a="sndtest" data-v="hit">필살기</button></div>');
+  h+=win('화면과 진동','',tog('vib',s.vib,'진동','안드로이드에서만 동작해요')+tog('fx',s.fx,'축하 연출','꽃가루 같은 화면 효과')+'<label class="f" style="margin-top:10px">글자 크기</label>'+seg('font',s.font,[['m','보통'],['l','크게']]));
+  h+=win('게임 규칙','',tog('autoQ',s.autoQ,'퀘스트 자동 체크','공부 기록으로 확인되는 퀘스트를 알아서 완료해요')+
+    '<div class="form" style="margin-top:10px"><div class="field grow"><label class="f">하루 목표 공부 시간 (시간)</label><input name="gh" type="number" inputmode="decimal" step="0.5" min="1" max="16" value="'+(S.goal.min/60)+'"></div><button class="btn ghost sm" data-a="setgoal">저장</button></div>'+
+    '<div class="form" style="margin-top:10px"><div class="field grow"><label class="f">기상 인정 시각</label><input name="wt" type="time" value="'+S.life.wakeT+'"></div><button class="btn ghost sm" data-a="setwake">저장</button></div>'+
+    '<div class="form" style="margin-top:10px"><div class="field grow"><label class="f">수면 목표 (시간)</label><input name="slh" type="number" inputmode="decimal" step="0.5" min="4" max="10" value="'+S.life.sleepH+'"></div><button class="btn ghost sm" data-a="setsleep">저장</button></div>'+
+    '<div class="form" style="margin-top:10px"><div class="field grow"><label class="f">캐릭터 이름</label><input name="nm" value="'+esc(S.name)+'"></div><button class="btn ghost sm" data-a="setname">저장</button></div>');
+  h+=win('알림','앱을 열어 두었거나 최근에 연 상태일 때 정해 둔 시각에 알려요. 앱을 완전히 닫으면 폰이 알림을 보내지 않을 수 있어요.',
+    '<div class="line"><span class="grow"><span class="t">알림 받기</span><br><span class="s">'+(('Notification' in window)?(Notification.permission==='granted'?'권한 허용됨':Notification.permission==='denied'?'권한 거부됨. 폰 설정에서 허용해 주세요':'켜면 권한을 물어봐요'):'이 브라우저는 알림을 지원하지 않아요')+'</span></span><button class="btn sm '+(n.on?'green':'ghost')+'" data-a="ntfon">'+(n.on?'켜짐':'꺼짐')+'</button></div>'+
+    '<div class="grid2" style="margin-top:10px"><div class="field"><label class="f">공부 시작 알림 (기록 없을 때)</label><input type="time" data-set="ntf.study" value="'+(n.study||'')+'"></div><div class="field"><label class="f">취침 알림</label><input type="time" data-set="ntf.sleep" value="'+(n.sleep||'')+'"></div></div>'+
+    '<label class="f" style="margin-top:12px">타이머 휴식 알림</label>'+seg('ntf.pomo',String(n.pomo||0),[['0','끄기'],['25','25분'],['50','50분'],['90','90분']]));
+  h+=backupWin();
+  h+=win('홈 화면에 추가','',homeGuide());
+  h+=win('데이터 초기화','모든 기록을 지우고 처음부터 시작해요. 되돌릴 수 없으니 먼저 백업 파일을 만들어 두세요.','<button class="btn red sm" data-a="reset1">모든 기록 지우기</button>');
+  h+=win('정보','','<p class="sub">앱 버전 '+APP_VER+'. 캐릭터·장비: Liberated Pixel Cup(LPC) 공개 에셋 (CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0 등). 몬스터·아이콘: Dungeon Crawl Stone Soup 타일 (CC0). 글꼴: 갈무리 (SIL OFL 1.1). 소리: 앱에서 직접 합성.</p><details class="more"><summary>LPC 제작자 '+CREDITS.length+'건 보기</summary>'+CREDITS.map(function(c){return '<div class="cred"><b>'+esc(c.f)+'</b><br>'+esc(c.a.join(', '))+'<br>'+esc(c.l.join(', '))+(c.u?'<br><a href="'+esc(c.u)+'" style="color:var(--gold)">'+esc(c.u)+'</a>':'')+'</div>'}).join('')+'</details><button class="btn ghost sm wide" style="margin-top:10px" data-a="help">게임 방법 보기</button>');
+  return h}
+function setPath(k,v){var p=k.split('.'),o=S.set;while(p.length>1)o=o[p.shift()];o[p[0]]=v}
+function getPath(k){var p=k.split('.'),o=S.set;while(p.length>1)o=o[p.shift()];return o[p[0]]}
+A.settog=function(e){var k=e.dataset.k;setPath(k,!getPath(k));auVol();if(k==='snd'&&S.set.snd)auStart();applyLook();save();render()};
+A.setseg=function(e){var k=e.dataset.k,v=e.dataset.v;setPath(k,k==='ntf.pomo'?+v:v);applyLook();save();render()};
+A.setsleep=function(){var v=parseFloat(val('slh'));if(!(v>=4&&v<=10)){feed('4~10시간 사이로 넣어 주세요','w');return}S.life.sleepH=v;feed('수면 목표를 '+v+'시간으로 바꿨어요','w');save();render()};
+A.sndtest=function(e){auStart();sfx(e.dataset.v)};
+A.reset1=function(){overlay('<div class="win modal" data-keep><h2>정말 모두 지울까요?</h2><p class="sub">레벨, 장비, 보스, 퀘스트, 공부 기록이 전부 사라져요. 백업 파일이 없으면 되돌릴 수 없어요.</p><div class="row" style="margin-top:10px"><button class="btn red grow" data-a="reset2">지우고 처음부터</button><button class="btn ghost" data-a="bkno">취소</button></div></div>')};
+A.reset2=function(){closeOv();try{localStorage.removeItem('jrpg3')}catch(e){}S=fresh();ST.forEach(function(s){S.statLv[s[0]]=lvOf(S.stats[s[0]],needS).l});UNDO=null;tab='home';save();render();feed('처음부터 시작해요','w')};
+document.addEventListener('input',function(ev){var t=ev.target;if(!t||!t.dataset||!t.dataset.set||t.type!=='range')return;var k=t.dataset.set;setPath(k,+t.value);var lab=document.getElementById('v_'+k);if(lab)lab.textContent=t.value;auVol()});
+document.addEventListener('change',function(ev){var t=ev.target;if(!t||!t.dataset||!t.dataset.set)return;setPath(t.dataset.set,t.type==='range'?+t.value:t.value);auVol();if(t.type==='range'&&t.dataset.set==='sfx')sfx('coin');save()});
+(function(){var st=document.createElement('style');st.textContent='body.big{font-size:17px}body.big .sub{font-size:14.5px}body.big .dim{font-size:13.5px}body.big .line .s{font-size:13.5px}body.nofx .conf{display:none}input[type=range]{padding:0;box-shadow:none;background:none;accent-color:#ffcf4d;height:28px}.tabs button{max-width:72px;font-size:11px}';document.head.appendChild(st)})();
+function applyLook(){if(!S.set)return;document.body.classList.toggle('big',S.set.font==='l');document.body.classList.toggle('nofx',!S.set.fx)}
+
+/* ---------- 화면 연결 ---------- */
+var _vHome12=vHome;vHome=function(){if(tab==='set')return vSet();var h=_vHome12();
+  h=h.replace('<div class="todo">','<div class="todo">'+planHome()).replace('>기록·결산·설정</button>','>기록·통계</button>');
+  return h};
+var _vTimer12=vTimer;vTimer=function(){var h=_vTimer12(),i=h.indexOf('<h2>'+statIco('ncs',26)+'NCS·전공');if(i<0)i=h.indexOf('NCS·전공 모의고사 점수는');
+  var j=h.indexOf('<h2>'+statIco('fa',26)+'문제 풀이 기록');var e=j>=0?h.indexOf('</section>',j)+10:-1;if(e>9)h=h.slice(0,e)+theoryWin()+h.slice(e);else h+=theoryWin();
+  var k=h.indexOf('지원서를 냈을 때');if(k>=0){var s=h.lastIndexOf('<section',k);h=h.slice(0,s)+esWin()+h.slice(s)}else h+=esWin();
+  return h};
+var _vLog12=vLog;vLog=function(){var h=_vLog12();
+  ['<h2>설정','<h2>백업','<h2>그림·글꼴 출처'].forEach(function(m){var i=h.indexOf(m);if(i<0)return;var s=h.lastIndexOf('<section',i),e=h.indexOf('</section>',i)+10;h=h.slice(0,s)+h.slice(e)});
+  h=h.replace('<h1>기록과 설정</h1><p>이번 달 결산, 최근 기록, 백업과 설정이에요.</p>','<h1>기록과 통계</h1><p>결산, 과목별 통계, 공부 잔디, 최근 기록이에요. 설정은 아래 「설정」 탭으로 옮겼어요.</p>');
+  var i2=h.indexOf('</div>')+6;return h.slice(0,i2)+statWin()+h.slice(i2)};
+var _vHelp12=vHelp;vHelp=function(){var h=_vHelp12(),i=h.lastIndexOf('</section>');
+  return h.slice(0,i)+'<h3>20. 소리</h3><p>8비트 BGM과 효과음이 나와요. 설정 탭에서 볼륨, 공부 중 BGM(잔잔한 곡·평소 곡·끄기)을 바꿀 수 있어요.</p>'+
+  '<h3>21. 이론 단원</h3><p>타이머 탭 「이론 단원 완료」에서 끝낸 단원을 기록하면 단원 1개에 30XP를 받아요.</p>'+
+  '<h3>22. 퀘스트 개편</h3><p>일일 퀘스트는 과목별 공부, 자소서, 경험 정리, 기사 읽기 등으로 늘었어요. 5개를 끝내면 일일 클리어(희귀 상자+30G), 10개면 일일 마스터(랜덤 상자 2+50G)예요. 연속 기록도 5개 기준이에요. 매일 바뀌는 [이벤트] 퀘스트는 조건을 채우면 자동 완료되고 희귀 상자를 줘요. 주간 퀘스트는 5개면 희귀 상자 2개, 10개면 전설 상자와 100G예요.</p>'+
+  '<h3>23. 인턴 보스</h3><p>보스를 등록할 때 신입 공채와 인턴을 고를 수 있어요. 인턴 보스는 HP와 승리 보상이 절반이에요. 공고 일정에도 인턴 공고가 따로 있어요.</p>'+
+  '<h3>24. 망토와 날개</h3><p>코디에 「망토·날개」 부위가 생겼어요. 상점, 상자, 보스, 숨은 보물, 업적에서 얻어요.</p>'+
+  '<h3>25. 계획표·자소서·통계</h3><p>퀘스트 탭에서 요일별 공부 계획을 짜고, 타이머 탭에서 자소서 문항을 글자 수를 세며 써요. 기록 탭에 과목별 통계가 있어요.</p>'+
+  '<h3>26. 알림</h3><p>설정 탭에서 켜면 공부 시작·취침 시각과 타이머 휴식 시점에 알려요. 앱이 완전히 닫혀 있으면 알림이 안 갈 수 있어요.</p>'+h.slice(i)};
+NOUNDO.planday=1;NOUNDO.esopen=1;NOUNDO.esclose=1;NOUNDO.essave=1;NOUNDO.esorg=1;NOUNDO.schkind=1;NOUNDO.statr=1;NOUNDO.sndtest=1;NOUNDO.settog=1;NOUNDO.setseg=1;NOUNDO.ntfon=1;NOUNDO.reset1=1;NOUNDO.reset2=1;
+ANAME.thadd='이론 단원 기록';ANAME.planadj='계획 변경';ANAME.plancopy='계획 복사';ANAME.esadd='자소서 문항 추가';ANAME.esst='자소서 상태 변경';ANAME.esdel='자소서 문항 삭제';ANAME.schsave2='공고 일정 수정';ANAME.schadd='공고 일정 추가';ANAME.setsleep='수면 목표 변경';
+var _mig12=migrate;migrate=function(){_mig12();p12init()};p12init();
+var _render12=render;render=function(){esSync();p12init();var c=questAuto();if(planCheck())c=true;if(c)save();_render12();applyLook()};
 
 /* ========== 시작 ========== */
 render();
