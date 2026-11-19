@@ -1395,7 +1395,7 @@ function petGain(xp,min){
   var P=S.pets,msg=null;
   if(min&&P.eggs.length){var e=P.eggs[0];e.got+=min;if(e.got>=EGG_NEED){P.eggs.shift();var pool=PETS.filter(function(p){return P.own.indexOf(p[0])<0});if(pool.length){var pk=pool[rnd(0,pool.length-1)];P.own.push(pk[0]);if(!P.eq)P.eq=pk[0];
     celebrate('알이 깨어났어요!','', '「'+pk[1]+'」',(P.eq===pk[0]?'동료로 함께 다녀요':'코디 탭의 동료에서 데려갈 수 있어요'),'<div style="display:flex;justify-content:center">'+tile('pet_'+pk[0],96)+'</div>')}else{addGold(100,'알 속의 금화')}}}
-  if(xp&&P.eq){var o=petLv(P.xp[P.eq]).l;P.xp[P.eq]=(P.xp[P.eq]||0)+xp;var n=petLv(P.xp[P.eq]).l;if(n>o){feed(PETN[P.eq]+' Lv.'+n+'!','b');if(n===10)addTitle('pet10_'+P.eq,PETN[P.eq]+'의 단짝','e')}}
+  if(xp&&P.eq){var o=petLv(P.xp[P.eq]).l;P.xp[P.eq]=(P.xp[P.eq]||0)+xp;var n=petLv(P.xp[P.eq]).l;if(n>o){feed(PETN[P.eq]+' Lv.'+n+'!','b');if(n===10){addTitle('pet10_'+P.eq,PETN[P.eq]+'의 단짝','e');if(typeof petName==='function')celebrate('동료 진화!','pur','「'+petName(P.eq)+'」','능력이 강해졌어요',tile('pet_'+P.eq,96,'filter:drop-shadow(0 0 8px #ffcf4d)'))}}}
 }
 function giveEgg(from){S.pets.eggs.push({id:uid(),got:0,from:from})}
 var _gainAct9=gainAct;gainAct=function(stats,base,kind,label,meta){var r=_gainAct9(stats,base,kind,label,meta);petGain(r,meta&&meta.min||0);return r};
@@ -1971,6 +1971,184 @@ NOUNDO.planday=1;NOUNDO.esopen=1;NOUNDO.esclose=1;NOUNDO.essave=1;NOUNDO.esorg=1
 ANAME.thadd='이론 단원 기록';ANAME.planadj='계획 변경';ANAME.plancopy='계획 복사';ANAME.esadd='자소서 문항 추가';ANAME.esst='자소서 상태 변경';ANAME.esdel='자소서 문항 삭제';ANAME.schsave2='공고 일정 수정';ANAME.schadd='공고 일정 추가';ANAME.setsleep='수면 목표 변경';
 var _mig12=migrate;migrate=function(){_mig12();p12init()};p12init();
 var _render12=render;render=function(){esSync();p12init();var c=questAuto();if(planCheck())c=true;if(c)save();_render12();applyLook()};
+
+/* ========== p13: BGM 주크박스·던전 층 탐험·동료 키우기·연말 결산 이벤트 ========== */
+APP_VER='1.3.0';
+function p13init(){
+  if(!S.set.jb)S.set.jb={town:'auto',boss:'boss',shop:'shop',study:'study',coordi:'castle',timer:'dungeon'};
+  if(!S.dg)S.dg={floor:0,best:0,rem:0,kills:0,log:[],got:[]};
+  var P=S.pets;if(P){if(!P.ht)P.ht={};if(!P.pat)P.pat={};if(P.snack==null)P.snack=0}
+  if(!S.dec)S.dec={};if(!S.yr)S.yr={};
+}
+/* ---------- BGM 추가와 주크박스 ---------- */
+SONGS.adventure={bpm:120,lead:'square',lv:.12,mel:[67,R_,67,71,74,R_,71,R_,72,R_,69,R_,74,R_,72,71,69,R_,69,72,76,R_,74,72,71,R_,74,R_,67,R_,R_,R_],bass:[43,48,50,43],arp:[[55,59,62],[60,64,67],[62,66,69],[55,59,62]],drum:1};
+SONGS.castle={bpm:88,lead:'triangle',lv:.15,mel:[74,R_,R_,78,81,R_,78,R_,79,R_,R_,76,74,R_,R_,R_,71,R_,R_,74,78,R_,76,R_,74,R_,73,R_,74,R_,R_,R_],bass:[50,47,43,45],arp:[[62,66,69],[59,62,66],[55,59,62],[57,61,64]]};
+SONGS.night={bpm:66,lead:'triangle',lv:.11,mel:[72,R_,R_,R_,69,R_,72,R_,74,R_,R_,R_,72,R_,R_,R_,69,R_,R_,R_,65,R_,67,R_,69,R_,R_,R_,R_,R_,R_,R_],bass:[41,38,46,48],arp:[[65,69,72],[62,65,69],[58,62,65],[60,64,67]],soft:1};
+SONGS.dungeon={bpm:92,lead:'square',lv:.09,mel:[62,R_,65,R_,69,R_,68,R_,69,R_,R_,R_,65,R_,62,R_,61,R_,64,R_,67,R_,65,R_,64,R_,R_,R_,61,R_,R_,R_],bass:[38,38,34,33],arp:[[62,65,69],[62,65,69],[58,62,65],[57,61,64]]};
+SONGS.xmas={bpm:132,lead:'square',lv:.12,mel:[64,64,64,R_,64,64,64,R_,64,67,60,62,64,R_,R_,R_,65,65,65,65,65,64,64,64,64,62,62,64,62,R_,67,R_],bass:[48,48,53,43],arp:[[60,64,67],[60,64,67],[65,69,72],[55,59,62]]};
+SONGS.rain={bpm:76,lead:'sine',lv:.16,mel:[76,R_,74,R_,72,R_,R_,R_,74,R_,72,R_,69,R_,R_,R_,72,R_,71,R_,69,R_,R_,67,69,R_,R_,R_,R_,R_,R_,R_],bass:[45,41,43,40],arp:[[57,60,64],[53,57,60],[55,59,62],[52,55,59]],soft:1};
+SONGS.festival={bpm:140,lead:'square',lv:.11,mel:[72,74,76,R_,79,R_,76,R_,77,79,81,R_,79,R_,R_,R_,76,77,79,R_,84,R_,81,79,77,R_,76,R_,74,R_,72,R_],bass:[48,53,55,48],arp:[[60,64,67],[65,69,72],[67,71,74],[60,64,67]],drum:1};
+var SONGN={town:'모험가 마을',adventure:'출정 행진곡',castle:'황금 성',shop:'골드 상점',boss:'보스전',dungeon:'지하 던전',study:'조용한 서재',night:'새벽 공부',rain:'비 오는 오후',festival:'축제의 밤',xmas:'징글벨 (12월)'};
+var JBS=[['town','캐릭터·퀘스트 화면'],['timer','타이머 화면'],['study','타이머로 공부하는 동안'],['boss','보스 화면'],['shop','상점'],['coordi','코디']];
+function autoTown(){var d=new Date(),h=d.getHours();if(d.getMonth()===11)return 'xmas';if(h<6)return 'night';return 'town'}
+var PREV=null;
+sceneOf=function(){if(!S.set.snd||S.set.bgm<=0)return null;if(PREV&&Date.now()<PREV.until)return PREV.k;var jb=S.set.jb,k;
+  if(S.timer){if(S.set.bgmTimer==='off')return null;k=S.set.bgmTimer==='calm'?jb.study:null}
+  if(!k)k=tab==='boss'?jb.boss:tab==='shop'?jb.shop:tab==='coordi'?jb.coordi:tab==='timer'?jb.timer:jb.town;
+  if(k==='auto')k=autoTown();return SONGS[k]?k:'town'};
+function jbWin(){var o='';JBS.forEach(function(s){var cur=S.set.jb[s[0]];o+='<div class="field" style="margin-top:8px"><label class="f">'+s[1]+'</label><select data-set="jb.'+s[0]+'">'+(s[0]==='town'?'<option value="auto"'+(cur==='auto'?' selected':'')+'>자동 (평소 마을, 새벽엔 「새벽 공부」, 12월엔 「징글벨」)</option>':'')+Object.keys(SONGN).map(function(k){return '<option value="'+k+'"'+(cur===k?' selected':'')+'>'+SONGN[k]+'</option>'}).join('')+'</select></div>'});
+  o+='<label class="f" style="margin-top:12px">미리 듣기 (15초)</label><div class="row wrap" style="gap:6px">'+Object.keys(SONGN).map(function(k){return '<button class="pill'+(PREV&&PREV.k===k&&Date.now()<PREV.until?' on':'')+'" data-a="jbprev" data-v="'+k+'">'+SONGN[k]+'</button>'}).join('')+'</div>';
+  return win('주크박스','화면마다 나올 BGM을 골라요. 모두 '+Object.keys(SONGN).length+'곡이에요.',o)}
+A.jbprev=function(e){auStart();PREV={k:e.dataset.v,until:Date.now()+15000};setTimeout(function(){if(tab==='set')render()},15100);render()};
+NOUNDO.jbprev=1;
+var _vSet13=vSet;vSet=function(){var h=_vSet13(),i=h.indexOf('<h2>화면과 진동');if(i<0)return h+jbWin();var s=h.lastIndexOf('<section',i);return h.slice(0,s)+jbWin()+h.slice(s)};
+
+/* ---------- 던전 층 탐험 ---------- */
+var DGMON=['초록 슬라임','오답 유령','고블린 회계사','미로 쥐 떼','해골 서기','마감 귀신','장부 미믹','잉크 박쥐','분개 골렘','시험지 정령','졸음 마녀','계산기 거미'];
+var DGBOSS=['1층 수문장 슬라임 킹','장부의 수호자','오답의 군주','마감의 리치','시험지 드래곤 새끼','황금 미믹','망각의 기사','회계 대마법사','시간 도둑','심연의 출제자'];
+function dgLive(){var add=S.timer?Math.floor((S.dg.rem+Math.floor(tElapsed()/60000))/10):0;return S.dg.floor+add}
+function dgRun(min,sd){
+  var sx=(sd||Date.now())>>>0;function rr(){sx=(sx+0x6D2B79F5)>>>0;var t=Math.imul(sx^sx>>>15,1|sx);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}function ri(a,b){return a+Math.floor(rr()*(b-a+1))}
+  var D=S.dg,start=D.floor;D.rem+=min;var gain=Math.floor(D.rem/10);D.rem-=gain*10;if(gain<=0&&min<15)return;
+  var lines=[],gold=0,box=0,rbox=0,lbox=0,kills=0;
+  for(var i=0;i<Math.floor(min/15);i++){if(rr()<.4){kills++;var m=DGMON[ri(0,DGMON.length-1)],g=ri(5,15);gold+=g;var r=rr();if(r<.08){box++;lines.push(m+' 처치, 랜덤 상자 발견')}else lines.push(m+' 처치 (+'+g+'G)')}}
+  for(var f=start+1;f<=start+gain;f++){
+    if(f%25===0){lbox++;lines.push(f+'층 보물방 발견! 전설 상자')}
+    else if(f%10===0){rbox++;gold+=30;kills++;lines.push(f+'층 미니 보스 「'+DGBOSS[(f/10-1)%DGBOSS.length]+'」 격파 (희귀 상자 +30G)')}
+    if(f%50===0)addTitle('dg'+f,'지하 '+f+'층 정복자',f>=100?'l':'e');
+  }
+  D.floor+=gain;D.best=Math.max(D.best,D.floor);D.kills+=kills;S.gold+=gold;S.boxes.rand+=box;S.boxes.rare+=rbox;S.boxes.legend+=lbox;
+  var entry={d:T(),f0:start,f1:D.floor,min:min,k:kills,g:gold,l:lines.slice(0,6)};D.log.unshift(entry);D.log=D.log.slice(0,20);
+  celebrate('탐험 귀환!','', '지하 '+start+'층 → '+D.floor+'층',(lines.length?lines.slice(0,5).map(esc).join('<br>')+(lines.length>5?'<br>외 '+(lines.length-5)+'건':''):'조용한 탐험이었어요')+'<br>금화 +'+gold+'G',tile('t_boss',64));
+}
+var _stopT13=stopTimer;stopTimer=function(){var m=S.timer?Math.floor(tElapsed()/60000):0,sd=S.timer?S.timer.start:0;_stopT13();if(m>=1){dgRun(m,sd);save();render()}};
+function dgWin(){var D=S.dg,live=dgLive(),nx=Math.floor(live/10)*10+10,o='';
+  o+='<div class="grid2"><div class="inset"><div class="dim">지금 위치</div><b class="num" style="font-size:20px">지하 '+live+'층</b></div><div class="inset"><div class="dim">처치한 몬스터</div><b class="num" style="font-size:20px">'+D.kills+'마리</b></div></div>';
+  o+='<div style="margin-top:10px">'+bar('',((live%10)+(S.timer?0:D.rem/10))*10,nx+'층 미니 보스까지 '+(nx-live)+'층')+'</div><div class="dim" style="margin-top:4px">타이머 공부 10분 = 1층. 10층마다 미니 보스(희귀 상자), 25층마다 보물방(전설 상자), 50층마다 칭호. 15분마다 몬스터를 만날 수 있어요.</div>';
+  if(D.log.length)o+='<div class="t" style="font-weight:700;margin:10px 0 4px">모험 일지</div>'+D.log.slice(0,4).map(function(x){return '<div class="line"><span class="grow"><span class="t">'+md(x.d)+' · '+x.f0+'층 → '+x.f1+'층</span><br><span class="s">'+hm(x.min)+', 몬스터 '+x.k+'마리, +'+x.g+'G'+(x.l.length?' · '+esc(x.l[0]):'')+'</span></span></div>'}).join('');
+  return win('던전 탐험','타이머를 켜고 공부하는 동안 캐릭터가 던전 아래로 내려가요. 타이머를 끄면 탐험 결과를 받아요.',o,'최고 '+D.best+'층',tile('t_boss',26))}
+var _vTimer13=vTimer;vTimer=function(){var h=_vTimer13(),i=h.indexOf('<div class="dungeon"');if(i>=0){var e=h.indexOf('>',i)+1;h=h.slice(0,e)+'<span class="dgf num" id="dgf">B'+dgLive()+'F</span>'+h.slice(e)}
+  var k=h.indexOf('<h2>과목 고르기');if(k<0)k=h.indexOf('<h2>'+tile('pot_focus',36));var s=k>=0?h.lastIndexOf('<section',k):-1;
+  var j=h.indexOf('</section>',h.indexOf('<div class="dungeon"'));
+  if(S.timer){var a=h.indexOf('data-a="stop"');a=a>=0?h.indexOf('</button>',a)+9:-1;if(a>8)return h.slice(0,a)+dgWin()+h.slice(a)}
+  else if(s>=0){var se=h.indexOf('</section>',s)+10;return h.slice(0,se)+dgWin()+h.slice(se)}
+  return h+dgWin()};
+setInterval(function(){var el=document.getElementById('dgf');if(el&&S.timer)el.textContent='B'+dgLive()+'F'},10000);
+
+/* ---------- 동료 키우기 ---------- */
+var PETST={quokka:'wr',hound:'ex',jackal:'fm',sheep:'iv',bat:'ncs',frog:'bm',butterfly:'wr',raiju:'ncs',griffon:'fa',hippogriff:'fm',imp:'cert',icebeast:'pf',polar:'fa',wyvern:'cert'};
+function petBonus(k){var lv=petLv(S.pets.xp[k]).l,ht=(S.pets.ht||{})[k]||0;return .05+(lv>=5?.03:0)+(lv>=10?.04:0)+(ht>=10?.03:0)}
+function petName(k){return (petLv(S.pets.xp[k]).l>=10?'빛나는 ':'')+PETN[k]}
+var _mp13=multParts;multParts=function(stats,kind){var p=_mp13(stats,kind),P=S.pets;if(P&&P.eq&&PETST[P.eq]&&stats.indexOf(PETST[P.eq])>=0)p.push(['동료 '+PETN[P.eq],petBonus(P.eq)]);return p};
+function petAdd(k,n){var P=S.pets,o=petLv(P.xp[k]).l;P.xp[k]=(P.xp[k]||0)+n;var nl=petLv(P.xp[k]).l;if(nl>o){feed(PETN[k]+' Lv.'+nl+'!','b');if(nl===10){addTitle('pet10_'+k,PETN[k]+'의 단짝','e');celebrate('동료 진화!','pur','「'+petName(k)+'」','능력이 강해졌어요. '+SK[PETST[k]].n+' XP +'+Math.round(petBonus(k)*100)+'%','<div class="petbox" style="height:auto">'+tile('pet_'+k,96,'filter:drop-shadow(0 0 8px #ffcf4d)')+'</div>')}}}
+A.petpat=function(e){var k=e.dataset.v,P=S.pets;if(P.pat[k]===T())return;P.pat[k]=T();P.ht[k]=Math.min(10,(P.ht[k]||0)+1);petAdd(k,20);feed(PETN[k]+'이(가) 좋아해요 (호감 +1)','w');save();render()};
+A.petfeed=function(e){var k=e.dataset.v,P=S.pets;if(!P.snack){feed('간식이 없어요. 상점에서 살 수 있어요','w');sfx('err');return}P.snack--;P.ht[k]=Math.min(10,(P.ht[k]||0)+1);petAdd(k,80);feed(PETN[k]+'이(가) 간식을 맛있게 먹었어요 (+80)','w');save();render()};
+A.buysnack=function(){if(S.gold<20)return;S.gold-=20;S.pets.snack++;feed('동료 간식을 샀어요','w');save();render()};
+ANAME.petpat='동료 쓰다듬기';ANAME.petfeed='간식 주기';ANAME.buysnack='간식 구매';
+function hearts(n){var s='';for(var i=0;i<10;i++)s+='<span style="color:'+(i<n?'#ff6f8f':'#3b4874')+'">♥</span>';return s}
+petView=function(){
+  var P=S.pets,o='';
+  if(P.eggs.length){var e=P.eggs[0];o+='<div class="line">'+tile('egg',40)+'<span class="grow"><span class="t">'+esc(e.from)+(P.eggs.length>1?' 외 '+(P.eggs.length-1)+'개':'')+'</span><br><span class="s">공부할수록 따뜻해져요</span>'+bar('',e.got/EGG_NEED*100,hm(e.got)+' / '+EGG_NEED/60+'시간')+'</span></div>'}
+  o+='<div class="items">'+PETS.map(function(p){var own=P.own.indexOf(p[0])>=0,evo=own&&petLv(P.xp[p[0]]).l>=10;return '<button class="it'+(own?(evo?' l':' r'):' lock')+(P.eq===p[0]?' eq':'')+(sel==='pet_'+p[0]?' sel':'')+'" data-a="petsel" data-v="'+p[0]+'" aria-label="'+(own?esc(p[1]):'발견하지 못한 동료')+'"><span class="petbox">'+tile('pet_'+p[0],60,evo?'filter:drop-shadow(0 0 5px #ffcf4d)':'')+'</span>'+(own?'':'<span class="lk">???</span>')+'</button>'}).join('')+'</div>';
+  var k=sel&&sel.indexOf('pet_')===0?sel.slice(4):P.eq;
+  if(k){var own=P.own.indexOf(k)>=0;if(own){var lv=petLv(P.xp[k]),ht=P.ht[k]||0,st=PETST[k];
+      o+='<div class="detail"><div class="nm '+(lv.l>=10?'l':'r')+'">'+esc(petName(k))+' <span class="num">Lv.'+lv.l+'</span></div>'+(lv.max?'<div class="dim">최고 레벨, 진화 완료</div>':bar('',lv.cur/lv.need*100,lv.cur+' / '+lv.need))+
+        '<div style="margin-top:6px">호감 '+hearts(ht)+'</div>'+
+        '<div class="sub" style="margin-top:6px">능력: 함께 다니면 <b class="gold">'+SK[st].n+' XP +'+Math.round(petBonus(k)*100)+'%</b></div><div class="dim">Lv.5에 +3%, Lv.10 진화에 +4%, 호감 10에 +3% 더 붙어요.</div>'+
+        '<div class="row wrap" style="margin-top:10px;gap:6px">'+(P.eq===k?'<span class="badge g">함께하는 중</span><button class="btn ghost sm" data-a="peteq" data-v="">혼자 다니기</button>':'<button class="btn sm" data-a="peteq" data-v="'+k+'">데려가기</button>')+
+        '<button class="btn ghost sm" data-a="petpat" data-v="'+k+'"'+(P.pat[k]===T()?' disabled':'')+'>쓰다듬기'+(P.pat[k]===T()?' (내일 또)':' +20')+'</button><button class="btn blue sm" data-a="petfeed" data-v="'+k+'"'+(P.snack?'':' disabled')+'>간식 주기 ('+P.snack+')</button></div></div>'}
+    else o+='<div class="detail"><div class="nm">???</div><div class="dim">아직 만나지 못한 동료예요. 어딘가에서 알을 얻으면 언젠가 만날 수 있어요.</div></div>'}
+  return '<section class="win"><p class="desc">동료는 알에서 깨어나요. 함께 다니면 동료마다 정해진 능력치 XP가 올라가요. 하루 한 번 쓰다듬고, 상점에서 산 간식을 주면 빨리 자라요. Lv.10이 되면 진화해요.</p>'+o+'</section>'};
+var _hero13=heroScene;heroScene=function(a){var h=_hero13(a),P=S.pets;if(!P||!P.eq)return h;if(petLv(P.xp[P.eq]).l>=10)h=h.replace('<div class="pet">','<div class="pet evo">').replace('<span>'+esc(PETN[P.eq])+' Lv.','<span>'+esc(petName(P.eq))+' Lv.');return h};
+var _vShop13=vShop;vShop=function(){var h=_vShop13(),i=h.indexOf('<h2>물약과 상자');if(i<0)return h;var e=h.indexOf('</section>',i);
+  return h.slice(0,e)+'<div class="line">'+tile('egg',36)+'<span class="grow"><span class="t">동료 간식 <span class="dim">보유 '+(S.pets.snack||0)+'</span></span><br><span class="s">동료 경험치 +80, 호감 +1</span></span><button class="btn sm" data-a="buysnack"'+(S.gold>=20?'':' disabled')+'>20G</button></div>'+h.slice(e)};
+
+/* ---------- 12월 챌린지 ---------- */
+function monthDays(ym){return Object.keys(S.days).filter(function(d){return d.slice(0,7)===ym})}
+var DECQ=[
+  ['dc_h100','12월에 100시간 공부','legend',function(y){return monthDays(y+'-12').reduce(function(s,d){return s+dayMin(d)},0)>=6000}],
+  ['dc_d25','12월에 25일 이상 공부','legend',function(y){return monthDays(y+'-12').filter(function(d){return dayMin(d)>0}).length>=25}],
+  ['dc_th30','이론 단원 30개 끝내기','rare',function(y){return S.theory.filter(function(x){return x.d.slice(0,7)===y+'-12'}).length>=30}],
+  ['dc_mock4','모의고사 점수 4회 기록','rare',function(y){return (S.scores||[]).filter(function(r){return r.d.slice(0,7)===y+'-12'}).length>=4}],
+  ['dc_es5','자소서 문항 5개 완성','rare',function(y){return S.esDone.filter(function(d){return d.slice(0,7)===y+'-12'}).length>=5}],
+  ['dc_dc20','일일 클리어 20일','legend',function(y){return S.dclrDays.filter(function(d){return d.slice(0,7)===y+'-12'}).length>=20}],
+  ['dc_dg50','던전 50층 더 내려가기','rare',function(y){var b=S.dec['base'+y];return b!=null&&S.dg.floor-b>=50}],
+  ['dc_xmas','크리스마스에 2시간 공부','rare',function(y){return dayMin(y+'-12-25')>=120}]
+];
+function decY(){var d=new Date();return d.getMonth()===11?d.getFullYear():null}
+function decCheck(){var y=decY();if(!y)return false;var ch=false;if(S.dec['base'+y]==null){S.dec['base'+y]=S.dg.floor;ch=true}
+  var got=S.dec['got'+y]||(S.dec['got'+y]=[]);
+  DECQ.forEach(function(q){if(got.indexOf(q[0])>=0||!q[3](y))return;got.push(q[0]);S.boxes[q[2]]++;ch=true;celebrate('12월 챌린지!','', '「'+q[1]+'」 달성',(q[2]==='legend'?'전설':'희귀')+' 상자 1개',tile(q[2]==='legend'?'chest_l':'chest_r',64))});
+  if(got.length>=6&&!S.dec['all'+y]){S.dec['all'+y]=1;addTitle('dec'+y,y+' 연말 결산왕','l');S.boxes.legend+=2;ch=true;celebrate('12월 마스터!','pur',y+' 연말 결산왕','챌린지 6개 달성: 전설 상자 2개 + 칭호','')}
+  return ch}
+function decWin(){var d=new Date(),y=decY();
+  if(!y){if(d.getMonth()===10)return win('12월 챌린지 (곧 오픈)','12월 1일에 열리는 한정 퀘스트예요. 미리 준비해 두세요.',DECQ.map(function(q){return '<div class="line">'+tile(q[2]==='legend'?'chest_l':'chest_r',28)+'<span class="grow">'+q[1]+'</span><span class="badge">'+(q[2]==='legend'?'전설':'희귀')+'</span></div>'}).join('')+'<div class="dim" style="margin-top:6px">6개 이상 달성하면 칭호 「연말 결산왕」과 전설 상자 2개</div>');return ''}
+  var got=S.dec['got'+y]||[];
+  return win('12월 챌린지','12월 한정 퀘스트예요. 조건을 채우면 자동으로 보상을 받아요. 6개 이상이면 칭호 「'+y+' 연말 결산왕」.',DECQ.map(function(q){var on=got.indexOf(q[0])>=0;return '<div class="line">'+tile(q[2]==='legend'?'chest_l':'chest_r',28)+'<span class="grow'+(on?' dim':'')+'">'+q[1]+'</span>'+(on?'<span class="badge g">달성</span>':'<span class="badge">'+(q[2]==='legend'?'전설':'희귀')+'</span>')+'</div>'}).join(''),got.length+' / '+DECQ.length)}
+
+/* ---------- 연말 시상식 ---------- */
+function yearStats(y){
+  var ds=Object.keys(S.days).filter(function(d){return d.slice(0,4)===String(y)}).sort(),r={min:0,days:0,prob:0,xp:0,sx:{},best:null,bestMin:0,wk:{},th:0};
+  ds.forEach(function(d){var m=dayMin(d),x=S.days[d];r.min+=m;if(m>0)r.days++;r.xp+=x.xp||0;Object.keys(x.prob||{}).forEach(function(k){r.prob+=x.prob[k]});Object.keys(x.sx||{}).forEach(function(k){if(k!=='ex')r.sx[k]=(r.sx[k]||0)+x.sx[k]});if(m>r.bestMin){r.bestMin=m;r.best=d}
+    var dt=new Date(d+'T00:00:00');dt.setDate(dt.getDate()-((dt.getDay()+6)%7));var w=fmt(dt);r.wk[w]=(r.wk[w]||0)+m});
+  r.bestWk=Object.keys(r.wk).sort(function(a,b){return r.wk[b]-r.wk[a]})[0]||null;r.mvp=Object.keys(r.sx).sort(function(a,b){return r.sx[b]-r.sx[a]})[0]||null;
+  var set={};S.qual.concat((S.rest&&S.rest.used)||[]).forEach(function(d){if(d.slice(0,4)===String(y))set[d]=1});var ks=Object.keys(set).sort(),run=0,mx=0,prev=null;ks.forEach(function(d){run=(prev&&addDays(prev,1)===d)?run+1:1;mx=Math.max(mx,run);prev=d});r.streak=mx;
+  r.th=S.theory.filter(function(x){return x.d.slice(0,4)===String(y)}).length;r.boss=S.bosses.filter(function(b){return (b.resDate||'').slice(0,4)===String(y)});r.first=ds[0]||null;return r}
+function ceremonyY(){var d=new Date(),m=d.getMonth(),dd=d.getDate();if(m===11&&dd===31)return d.getFullYear();if(m===0&&dd<=15)return d.getFullYear()-1;return null}
+function ceremonyHtml(y,reward){var r=yearStats(y);
+  var aw=[['올해의 과목',r.mvp?SK[r.mvp].n:'-','가장 많은 XP를 쌓은 능력치'],['몰입상',r.best?md(r.best)+' '+hm(r.bestMin):'-','하루에 가장 오래 공부한 날'],['베스트 위크',r.bestWk?md(r.bestWk)+'~ '+hm(r.wk[r.bestWk]):'-','가장 많이 공부한 주'],['철인상',r.streak+'일','가장 길게 이어간 연속 기록'],['문제 사냥꾼',r.prob.toLocaleString()+'문제','올해 푼 문제'],['이론 정복자',r.th+'단원','올해 끝낸 이론 단원'],['도전자',r.boss.length+'전 '+r.boss.filter(function(b){return b.res==='win'}).length+'승','결과가 나온 보스전'],['던전 탐험가','지하 '+S.dg.best+'층','가장 깊이 내려간 층']];
+  return '<div class="win modal" data-keep style="max-height:86vh;overflow:auto"><h2>'+y+' 연말 시상식</h2><p class="desc">'+(r.first?md(r.first)+'부터 기록한 ':'')+y+'년의 모험을 돌아봐요.</p>'+
+    '<div class="grid2"><div class="inset"><div class="dim">총 공부 시간</div><b class="num gold" style="font-size:18px">'+hm(r.min)+'</b></div><div class="inset"><div class="dim">공부한 날</div><b class="num" style="font-size:18px">'+r.days+'일</b></div><div class="inset"><div class="dim">얻은 XP</div><b class="num" style="font-size:18px">'+r.xp.toLocaleString()+'</b></div><div class="inset"><div class="dim">지금 레벨</div><b class="num" style="font-size:18px">Lv.'+lvOf(S.xp,needL).l+'</b></div></div>'+
+    aw.map(function(a){return '<div class="line">'+tile('a_bwin',32)+'<span class="grow"><span class="t">'+a[0]+'</span><br><span class="s">'+a[2]+'</span></span><b class="gold">'+esc(a[1])+'</b></div>'}).join('')+
+    (reward?'<div class="sub" style="margin-top:8px;text-align:center">시상식 참석 선물: 전설 상자 1개 + 칭호 「'+y+' 시상식 주인공」</div>':'')+'<button class="btn wide" style="margin-top:12px" data-a="cerclose">닫기</button></div>'}
+A.ceremony=function(e){var y=+e.dataset.v,cy=ceremonyY(),rw=false;if(cy===y&&!S.yr['cer'+y]){S.yr['cer'+y]=1;S.boxes.legend++;addTitle('cer'+y,y+' 시상식 주인공','l');rw=true;save()}sfx('level');overlay(ceremonyHtml(y,rw))};
+A.cerclose=function(){closeOv();render()};NOUNDO.cerclose=1;
+function yearWin(){var d=new Date(),y=d.getFullYear(),cy=ceremonyY();if(cy)y=cy;else if(d.getMonth()<11)return '';
+  return win(y+' 연말 결산',cy?'시상식이 열렸어요! 지금 열면 참석 선물을 받아요.':'12월 31일에 시상식이 열려요. 지금은 미리 보기만 할 수 있어요.','<button class="btn '+(cy&&!S.yr['cer'+y]?'':'ghost ')+'wide" data-a="ceremony" data-v="'+y+'">'+(cy?(S.yr['cer'+y]?'시상식 다시 보기':'시상식 입장하기'):'미리 보기')+'</button>')}
+
+/* ---------- 화면 연결 ---------- */
+var _vQuest13=vQuest;vQuest=function(){var h=_vQuest13(),w=decWin();return w?insBefore(h,'<h2>보물 상자',w):h};
+var _vHome13=vHome;vHome=function(){var h=_vHome13();if(tab==='set')return h;var y=decY(),cy=ceremonyY(),add='';
+  if(y){var got=(S.dec['got'+y]||[]).length;add+='<div class="inset">'+tile('chest_l',32)+'<div class="grow"><div class="k">12월 챌린지</div><div class="v">'+got+' / '+DECQ.length+' 달성</div></div><button class="btn sm ghost" data-a="tab" data-v="quest">보기</button></div>'}
+  if(cy&&!S.yr['cer'+cy])add+='<div class="inset">'+tile('a_bwin',32)+'<div class="grow"><div class="k">'+cy+' 연말 시상식</div><div class="v gold">지금 열렸어요</div></div><button class="btn sm" data-a="ceremony" data-v="'+cy+'">입장</button></div>';
+  add+='<div class="inset">'+tile('t_boss',32)+'<div class="grow"><div class="k">던전 탐험</div><div class="v num">지하 '+dgLive()+'층</div></div><button class="btn sm ghost" data-a="tab" data-v="timer">탐험</button></div>';
+  return h.replace('<div class="todo">','<div class="todo">'+add)};
+var _vLog13=vLog;vLog=function(){var h=_vLog13(),w=yearWin();if(!w)return h;var i=h.indexOf('</div>')+6;return h.slice(0,i)+w+h.slice(i)};
+var _vHelp13=vHelp;vHelp=function(){var h=_vHelp13(),i=h.lastIndexOf('</section>');
+  return h.slice(0,i)+'<h3>27. 주크박스</h3><p>BGM이 '+Object.keys(SONGN).length+'곡이에요. 설정 탭 「주크박스」에서 화면마다 곡을 고르고 미리 들어 볼 수 있어요.</p>'+
+  '<h3>28. 던전 층 탐험</h3><p>타이머로 10분 공부하면 1층 내려가요. 10층마다 미니 보스(희귀 상자), 25층마다 보물방(전설 상자), 50층마다 칭호. 15분마다 몬스터를 만나 금화를 얻을 수 있어요. 결과는 타이머를 끌 때 받아요.</p>'+
+  '<h3>29. 동료 키우기</h3><p>동료마다 올려 주는 능력치가 있어요(5~15%). 하루 한 번 쓰다듬기, 상점 간식(20G)으로 키우고 호감을 쌓아요. Lv.10에 진화해요.</p>'+
+  '<h3>30. 연말 이벤트</h3><p>12월에는 한정 챌린지 8개가 열리고, 6개를 달성하면 칭호를 받아요. 12월 31일부터 1월 15일까지 연말 시상식이 열려요.</p>'+h.slice(i)};
+(function(){var st=document.createElement('style');st.textContent='.dgf{position:absolute;right:10px;top:10px;z-index:4;font-family:var(--big);font-size:18px;color:#ffcf4d;background:rgba(10,14,28,.85);padding:2px 9px;border-radius:2px;box-shadow:0 0 0 2px var(--edge)}.pet.evo .tile{filter:drop-shadow(0 0 6px #ffcf4d)}.pet.evo span{color:#ffcf4d}';document.head.appendChild(st)})();
+var _mig13=migrate;migrate=function(){_mig13();p13init()};p13init();
+var _render13=render;render=function(){p12init();p13init();if(decCheck())save();_render13()};
+
+/* ========== p14: 캐릭터 그림 합성(메모리 절약)·그림 불러오기 재시도 ========== */
+APP_VER='1.3.1';
+var ASSETV='131';SHEET='sprites.png?v='+ASSETV;TSHEET='tiles.png?v='+ASSETV;
+var SHIMG=new Image(),SHOK=false,SHTRY=0,COMP={},COMPN=0;
+function shLoad(){SHTRY++;SHIMG=new Image();SHIMG.onload=function(){SHOK=true;COMP={};COMPN=0;render()};
+  SHIMG.onerror=function(){if(SHTRY<3)setTimeout(shLoad,800*SHTRY);else feed('캐릭터 그림을 불러오지 못했어요. 인터넷 연결을 확인하고 앱을 다시 열어 주세요','w')};
+  SHIMG.src=SHEET+(SHTRY>1?'&r='+Date.now():'')}
+shLoad();
+function compStrip(L){var key=L.map(function(l){return l[0]}).join('.');if(COMP[key])return COMP[key];
+  var c=document.createElement('canvas');c.width=576;c.height=64;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  L.forEach(function(l){var r=l[0];g.drawImage(SHIMG,Math.floor(r/SPRC)*576,(r%SPRC)*64,576,64,0,0,576,64)});
+  var u;try{u=c.toDataURL('image/png')}catch(e){u=''}
+  if(COMPN>500){COMP={};COMPN=0}COMP[key]=u;COMPN++;return u}
+avatar=function(look,eq,opt){
+  opt=opt||{};var s=opt.s||3,f=opt.f||0,L=[];
+  var sk=SPR.skins[look.skin]||SPR.skins[0],hk=(SPR.hairKeys[look.hair]||SPR.hairKeys[0])+'_'+(SPR.hcol[look.hc]||SPR.hcol[0]);
+  L=L.concat(SPR.skin[sk],SPR.hair[hk]);GSLOTS.forEach(function(sl){L=L.concat(SPR.items[eq[sl]||sl+'_base']||[])});
+  L.sort(function(a,b){return a[1]-b[1]});
+  var box='<div class="spr'+(opt.walk?' walk':'')+'" style="--s:'+s+';width:'+64*s+'px;height:'+64*s+'px'+(opt.style?';'+opt.style:'')+'">';
+  if(!SHOK)return box+'</div>';
+  var u=compStrip(L);if(!u)return box+'</div>';
+  return box+'<i style="--ox:0px;background-image:url('+u+');background-size:'+(576*s)+'px '+(64*s)+'px;background-position:'+(-f*64*s)+'px 0"></i></div>'};
+/* 타일 그림이 안 뜨면 다시 시도 */
+(function(){var t=new Image(),n=0;function go(){n++;t.onerror=function(){if(n<3)setTimeout(function(){TSHEET='tiles.png?v='+ASSETV+'&r='+Date.now();go()},800*n)};t.onload=function(){if(n>1)render()};t.src=TSHEET}go()})();
+/* 장면의 구름이 글자 상자 뒤로 비치지 않게 */
+(function(){var st=document.createElement('style');st.textContent='.scene .lv,.scene .job{background:rgba(10,14,28,.95)}';document.head.appendChild(st)})();
 
 /* ========== 시작 ========== */
 render();
