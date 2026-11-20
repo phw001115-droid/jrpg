@@ -2368,6 +2368,43 @@ var _applyLook16=applyLook;applyLook=function(){_applyLook16();if(S.set)document
 var _vHelp16=vHelp;vHelp=function(){var h=_vHelp16(),i=h.lastIndexOf('</section>');return h.slice(0,i)+'<h3>38. 화면 정리</h3><p>탭마다 위쪽에 작은 탭이 있어요. 예를 들어 타이머 탭은 공부, 기록, 취업 준비로 나뉘어요. 설정의 「간단히 보기」를 켜면 설명 문구가 숨겨져 화면이 짧아져요.</p>'+h.slice(i)};
 var _render16=render;render=function(){_render16();todoSort()};
 
+/* ========== p17: 라이벌 리그 개편 — 10명, 실력 맞춤, 연습 주간 ========== */
+APP_VER='1.5.1';
+var RIV2=[['이른새','새벽형','m',1.20],['한결','꾸준형','s',1.12],['막판','벼락치기형','c',1.08],['올빼미','야행성','n',1.04],['차곡','계획형','s',1.00],['불꽃','몰아치기형','c',.96],['해오름','새벽형','m',.92],['단단','꾸준형','s',.88],['느긋','여유형','n',.84],['집념','노력형','s',.80]];
+RPAT.n=[1,1,1,1,1,1.1,1.1];var RWIN={m:[6,20],s:[9,23],c:[13,24],n:[15,24]};
+RDIFF=[.85,1,1.15];
+function p17init(){var R=S.rv;if(!R.base)R.base={};if(R.v!==2){R.v=2;R.from=T();R.fromH=new Date().getHours()+new Date().getMinutes()/60;R.prac=WK();R.last=WK()}}
+function firstStudy(){var ks=Object.keys(S.days).filter(function(d){return dayMin(d)>0}).sort();return ks[0]||null}
+function rivBase(ws){var R=S.rv;if(R.base[ws]!=null)return R.base[ws];var f=firstStudy(),b=180;
+  if(f&&Math.round((new Date(ws+'T00:00:00')-new Date(f+'T00:00:00'))/864e5)>=14){var s=0;for(var i=1;i<=14;i++)s+=dayMin(addDays(ws,-i));b=s/14}
+  b=Math.max(60,Math.min(600,Math.round(b)));if(ws<=WK()){R.base[ws]=b;var ks=Object.keys(R.base).sort();while(ks.length>12)delete R.base[ks.shift()]}return b}
+function winFrac(p,h){var w=RWIN[p];return Math.max(0,Math.min(1,(h-w[0])/(w[1]-w[0])))}
+rivDay=function(r,d){var R=S.rv;if(R.from&&d<R.from)return 0;var dw=new Date(d+'T00:00:00').getDay(),ws=rivWkOf(d),wd=R.wd&&R.wd[ws];
+  var m=rivBase(ws)*r[3]*RPAT[r[2]][dw]*RDIFF[wd!=null?wd:(R.diff==null?1:R.diff)]*(.8+.4*frac(r[0]+d));
+  if(d>T())return 0;var now=new Date(),h=now.getHours()+now.getMinutes()/60,fe=d===T()?winFrac(r[2],h):1;
+  if(d===R.from)fe=Math.max(0,fe-winFrac(r[2],R.fromH||0));return Math.round(m*fe)};
+rivWeek=function(r,ws){var s=0;for(var i=0;i<7;i++)s+=rivDay(r,addDays(ws,i));return s};
+board=function(ws){var a=RIV2.map(function(r){return{n:r[0],t:r[1]+' 지원자',m:rivWeek(r,ws),me:false}});a.push({n:S.name,t:'나',m:myWeek(ws),me:true});a.sort(function(x,y){return y.m-x.m||(x.me?-1:1)});return a};
+var RREW=[[3,'희귀 상자 2 + 50G'],[6,'희귀 상자 1'],[10,'랜덤 상자 2'],[11,'랜덤 상자 1']];
+function rewOf(rk){for(var i=0;i<RREW.length;i++)if(rk<=RREW[i][0])return i;return 3}
+rivCheck=function(){var ch=false,R=S.rv;p17init();if(!R.wd)R.wd={};if(R.wd[WK()]==null){R.wd[WK()]=R.diff==null?1:R.diff;var wk=Object.keys(R.wd).sort();while(wk.length>8)delete R.wd[wk.shift()];ch=true}
+  if(R.last!==WK()){var ws=R.last,b=board(ws),rk=b.findIndex(function(x){return x.me})+1,prac=R.prac===ws;R.last=WK();ch=true;rivBase(WK());
+    if(myWeek(ws)>0){R.hist.push({wk:ws,rk:rk,m:myWeek(ws),prac:prac});R.hist=R.hist.slice(-26);var top=b.slice(0,3).map(function(x,i){return (i+1)+'위 '+esc(x.n)+' '+hm(x.m)}).join('<br>');
+      if(prac)celebrate('연습 주간 결과: '+rk+'위','blue',md(ws)+' 주 (보상 없음)',top+'<br>이번 주부터 본 리그가 시작돼요. 라이벌 기준이 내 기록에 맞춰져요.',tile('a_bwin',64));
+      else{var g=rewOf(rk);if(g===0){S.boxes.rare+=2;S.gold+=50;if(rk===1)addTitle('rvleague','라이벌 리그 우승','l')}else if(g===1)S.boxes.rare++;else if(g===2)S.boxes.rand+=2;else S.boxes.rand++;
+        celebrate('주간 리그 '+rk+'위','', md(ws)+' 주 결과 (11명 중)',top+'<br>보상: '+RREW[g][1],tile('a_bwin',64))}}}
+  var t=T();if(R.al!==t&&new Date().getHours()>=15){var bb=board(WK()),k=bb.findIndex(function(x){return x.me});if(k>0){var up=bb[k-1],gap=up.m-bb[k].m;if(gap<=90){R.al=t;ch=true;feed(up.n+'까지 '+hm(gap)+' 차이예요. 오늘 따라잡아 볼까요?','b')}}}
+  return ch};
+rivWin=function(){var ws=WK(),b=board(ws),mx=Math.max(60,b[0].m),rk=b.findIndex(function(x){return x.me})+1,prac=S.rv.prac===ws,base=rivBase(ws);
+  var o='<div class="sub" style="margin-bottom:6px">'+(prac?'<span class="badge">연습 주간</span> 라이벌도 '+md(S.rv.from)+'부터 같이 출발했어요. 이번 주는 보상 없이 순위만 봐요.':'이번 주 라이벌 기준 <b class="gold">하루 '+hm(base)+'</b> ('+(firstStudy()&&Math.round((new Date(ws+'T00:00:00')-new Date(firstStudy()+'T00:00:00'))/864e5)>=14?'내 최근 2주 평균':'기록이 2주 쌓이기 전 기본값')+')')+'</div>';
+  o+=b.map(function(x,i){var g=rewOf(i+1),col=['#ffcf4d','#6fb8ff','#6fe3a1','#6f7a99'][g];return '<div class="row" style="gap:8px;margin-top:6px'+(x.me?';background:#2b3358;margin-left:-6px;margin-right:-6px;padding:4px 6px;border-radius:3px':'')+'"><b class="num" style="width:22px;color:'+col+'">'+(i+1)+'</b><span style="width:92px;font-size:13px;line-height:1.25'+(x.me?';color:var(--gold2);font-weight:700':'')+'">'+esc(x.n)+'<br><span class="dim" style="font-size:11px">'+esc(x.t)+'</span></span><div class="grow"><div class="bar sm" style="--c:'+(x.me?'#ffcf4d':'#56608a')+'"><i style="width:calc('+(x.m/mx*100).toFixed(1)+'% - 4px)"></i></div></div><span class="dim num" style="width:66px;text-align:right">'+hm(x.m)+'</span></div>'}).join('');
+  var gap=rk>1?b[rk-2].m-b[rk-1].m:0;o+='<div class="sub" style="margin-top:10px">'+(rk===1?'지금 1위예요!':'바로 위 '+esc(b[rk-2].n)+'까지 <b class="gold">'+hm(gap)+'</b>')+'</div>';
+  o+='<div class="row wrap" style="gap:4px;margin-top:6px">'+RREW.map(function(r,i){var lo=i?RREW[i-1][0]+1:1;return '<span class="badge'+(i===0?' y':i===1?' g':'')+'">'+(lo===r[0]?lo:lo+'~'+r[0])+'위 '+r[1]+'</span>'}).join('')+'</div>';
+  return win('주간 라이벌 리그','나와 비슷한 수준의 가상 지원자 10명과 주간 공부 시간을 겨뤄요. 라이벌 공부량은 내 최근 2주 하루 평균의 80~120%로 매주 월요일에 다시 맞춰져요. 월요일에 지난주 순위로 보상을 받아요.',o,rk+'위 / '+b.length+'명')};
+var _vSet17=vSet;vSet=function(){return _vSet17().replace('라이벌이 하루에 공부하는 양이 달라져요. 바꾸면 다음 주 월요일부터 적용돼요.','라이벌 전체 공부량을 15% 줄이거나 늘려요. 바꾸면 다음 주 월요일부터 적용돼요.')};
+var _vHelp17=vHelp;vHelp=function(){return _vHelp17().replace(/<h3>33\. 주간 라이벌<\/h3><p>[^<]*<\/p>/,'<h3>33. 주간 라이벌 리그</h3><p>가상의 지원자 10명과 주간 공부 시간을 겨뤄요. 라이벌 공부량은 내 최근 2주 하루 평균의 80~120%로 매주 맞춰지고, 기록이 2주 쌓이기 전에는 하루 3시간을 기준으로 해요. 처음 쓰는 주는 연습 주간이에요. 월요일에 1~3위 희귀 상자 2개와 50G, 4~6위 희귀 상자, 7~10위 랜덤 상자 2개, 11위 랜덤 상자를 받아요.</p>')};
+var _mig17=migrate;migrate=function(){_mig17();if(S.rv)p17init()};
+
 /* ========== 시작 ========== */
 render();
 if(S.timer){var seen=0;try{seen=+localStorage.getItem('jrpg_seen')||0}catch(e){}if(seen)awayCheck(Date.now()-seen)}
